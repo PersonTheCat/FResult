@@ -1,0 +1,9 @@
+.DS_Store
+gradle
+.gradle/
+gradlew
+gradle.bat
+build/
+out/
+hjson.iml
+.idea

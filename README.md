@@ -30,7 +30,7 @@ Basic implementations for each of the above use-cases are as follows:
   }
   
   // Create and return a new error directly.
-  public static String betterReturnAlt() {
+  public static Result<String, IOException> betterReturnAlt() {
     final File f = getFile();
     return testConditions()
       ? Result.ok(getContents(f))

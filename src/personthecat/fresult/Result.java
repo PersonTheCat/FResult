@@ -43,7 +43,7 @@ import static personthecat.fresult.Shorthand.*;
  *   }
  *
  *   // Create and return a new error directly.
- *   public static String betterReturnAlt() {
+ *   public static Result<String, IOException> betterReturnAlt() {
  *     final File f = getFile();
  *     return testConditions()
  *       ? Result.ok(getContents(f))
@@ -83,8 +83,7 @@ public class Result<T, E extends Throwable> {
     /**
      * Accepts an error and ignores it, while still coercing it to its lowest type, thus
      * not allowing any unspecified error types to be ignored.
-     * e.g. {@code Result.of(...).ifErr(Result::IGNORE);} Alternatively, a static import can be
-     * used to remove the namespace
+     * e.g. {@code Result.of(...).ifErr(Result::IGNORE);}
      */
     public static <E extends Throwable> void IGNORE(E e) {}
     /**

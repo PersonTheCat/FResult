@@ -622,7 +622,7 @@ public class Result<T, E extends Throwable> {
      * @return A new Result wrapping the value directly, itself wrapped in {@link Optional}.
      */
     @SuppressWarnings("unchecked")
-    private <U> Optional<Result<U, E>> transpose() {
+    public <U> Optional<Result<U, E>> transpose() {
         if (isErr()) {
             return full(Result.err(unwrapErr()));
         }

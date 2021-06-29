@@ -296,13 +296,13 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      *         the input.
      */
     @SafeVarargs
-    public static <E extends Throwable> Pending<Void, E> join(Result<Void, E>... results) {
-        return new Pending<>(() -> {
-            for (Result<Void, E> result : results) {
-                result.orElseThrow();
+    public static <E extends Throwable> Result<Void, E> join(Result<Void, E>... results) {
+        for (Result<Void, E> result : results) {
+            if (result.isErr()) {
+                return result;
             }
-            return Void.INSTANCE;
-        });
+        }
+        return Result.ok();
     }
     /**
      * Wraps any exceptions from the array into a new Result object.

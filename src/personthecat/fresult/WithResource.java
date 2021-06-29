@@ -1,6 +1,8 @@
 package personthecat.fresult;
 
-import personthecat.fresult.interfaces.*;
+import personthecat.fresult.interfaces.ThrowingConsumer;
+import personthecat.fresult.interfaces.ThrowingFunction;
+import personthecat.fresult.interfaces.ThrowingSupplier;
 
 /**
  * A helper classed used for generating Results with a single closeable resource.
@@ -9,7 +11,9 @@ import personthecat.fresult.interfaces.*;
  * @param <R> The resource being consumed and closed by this handler.
  * @param <E> The type of error to be caught by the handler.
  */
+@SuppressWarnings({"unused", "WeakerAccess", "UnusedReturnValue"})
 public class WithResource<R extends AutoCloseable, E extends Throwable> {
+
     private final ThrowingSupplier<R, E> rGetter;
 
     WithResource(ThrowingSupplier<R, E> rGetter) {
@@ -26,8 +30,14 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
      *                value or throws an exception.
      * @return The result of the operation.
      */
-    public <T, E2 extends Throwable> Result<T, E2> of(ThrowingFunction<R, T, E2> attempt) {
-        return new Result<>(() -> getValue(attempt));
+    public <T, E2 extends E> Result.Pending<T, E> of(ThrowingFunction<R, T, E2> attempt) {
+        return Result.of(() -> {
+            try (R r = this.rGetter.get()) {
+                return attempt.apply(r);
+            } catch (Throwable e) {
+                throw Result.<E>errorFound(e);
+            }
+        });
     }
 
     /**
@@ -37,8 +47,8 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
      *                exception.
      * @return The result of the operation.
      */
-    public <E2 extends Throwable> Result<Void, E2> of(ThrowingConsumer<R, E2> attempt) {
-        return of(r -> {
+    public <E2 extends E> Result.Pending<Void, E> of(ThrowingConsumer<R, E2> attempt) {
+        return this.of(r -> {
             attempt.accept(r);
             return Void.INSTANCE;
         });
@@ -51,7 +61,7 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
      *                 throws an exception.
      * @return A new wrapper containing getters for both resources.
      */
-    public <R2 extends AutoCloseable> WithResources<R, R2, E> with(ThrowingSupplier<R2, E> resource) {
+    public <R2 extends AutoCloseable> WithResources<R, R2, E> and(ThrowingSupplier<R2, E> resource) {
         return new WithResources<>(rGetter, resource);
     }
 
@@ -62,19 +72,31 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
      *               second, and may throw an exception.
      * @return A new wrapper containing getters for both resources.
      */
-    public <R2 extends AutoCloseable> WithResources<R, R2, E> with(ThrowingFunction<R, R2, E> getter) {
+    public <R2 extends AutoCloseable> WithResources<R, R2, E> and(ThrowingFunction<R, R2, E> getter) {
         return new WithResources<>(rGetter, () -> getter.apply(rGetter.get()));
     }
 
     /**
-     * Variant of Result#getValue based on the standard try-with-resources
+     * Optional syntactic variant of {@link #and(ThrowingSupplier)} with equivalent
      * functionality.
+     *
+     * @param resource A function which either supplies the intended resource or
+     *                 throws an exception.
+     * @return A new wrapper containing getters for both resources.
      */
-    private <T, E2 extends Throwable> Value<T, E2> getValue(ThrowingFunction<R, T, E2> attempt) {
-        try (R r = rGetter.get()) {
-            return Value.ok(attempt.apply(r));
-        } catch (Throwable e) {
-            return Value.err(Result.errorFound(e));
-        }
+    public <R2 extends AutoCloseable> WithResources<R, R2, E> with(ThrowingSupplier<R2, E> resource) {
+        return this.and(resource);
+    }
+
+    /**
+     * Optional syntactic variant of {@link #and(ThrowingFunction)} with equivalent
+     * functionality.
+     *
+     * @param getter A function which accepts the first resource, yields the
+     *               second, and may throw an exception.
+     * @return A new wrapper containing getters for both resources.
+     */
+    public <R2 extends AutoCloseable> WithResources<R, R2, E> with(ThrowingFunction<R, R2, E> getter) {
+        return this.and(getter);
     }
 }

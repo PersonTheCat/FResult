@@ -1,19 +1,22 @@
 package personthecat.fresult;
 
-import personthecat.fresult.interfaces.*;
+import personthecat.fresult.interfaces.ThrowingRunnable;
+import personthecat.fresult.interfaces.ThrowingSupplier;
 
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import static personthecat.fresult.Shorthand.*;
+import static personthecat.fresult.Shorthand.missingProcedureEx;
 
 /**
  * A set of procedures for handling specific error types.
  */
+@SuppressWarnings({"unused", "WeakerAccess", "UnusedReturnValue"})
 public class Protocol {
-    private Set<Procedure<? extends Exception>> procedures = new HashSet<>();
+
+    private final Set<Procedure<? extends Exception>> procedures = new HashSet<>();
 
     /**
      * Defines a new procedure for handling a specific type of error.
@@ -23,7 +26,7 @@ public class Protocol {
      * @return The current Protocol which now contains the procedure.
      */
     public <E extends Exception> Protocol define(Class<E> type, Consumer<E> func) {
-        procedures.add(new Procedure<>(type, func));
+        this.procedures.add(new Procedure<>(type, func));
         return this;
     }
 
@@ -37,16 +40,24 @@ public class Protocol {
      * @return The result of the operation.
      */
     public <T> Result<T, Exception> of(ThrowingSupplier<T, Exception> attempt) {
-        return new Result.Handled<>(getValue(attempt));
+        try {
+            return new Result.Value<>(attempt.get());
+        } catch (Exception e) {
+            if (tryHandle(e)) {
+                return new Result.Error<>(e);
+            }
+            throw missingProcedureEx(e);
+        }
     }
 
     /**
      * Variant of {@link #of(ThrowingSupplier)} which does not yield a value.
+     *
      * @param attempt A function which may throw an exception.
      * @return The result of the operation.
      */
     public Result<Void, Exception> of(ThrowingRunnable<Exception> attempt) {
-        return of(() -> {
+        return this.of(() -> {
             attempt.run();
             return Void.INSTANCE;
         });
@@ -55,27 +66,13 @@ public class Protocol {
     /**
      * Variant of {@link #of(ThrowingSupplier)} which returns the value
      * directly, wrapped in {@link Optional}.
+     *
      * @param attempt A function which either yeilds a value or throws an
      *                exception.
      * @return The value yielded by the operation, wrapped in {@link Optional}.
      */
     public <T> Optional<T> get(ThrowingSupplier<T, Exception> attempt) {
-        return getValue(attempt).result;
-    }
-
-    /**
-     * Variant of Result#getValue which handles any potential errors in
-     * advance.
-     */
-    private <T> Value<T, Exception> getValue(ThrowingSupplier<T, Exception> attempt) {
-        try {
-            return Value.ok(attempt.get());
-        } catch (Exception e) {
-            if (tryHandle(e)) {
-                return Value.err(e);
-            }
-            throw missingProcedureEx(e);
-        }
+        return this.of(attempt).get();
     }
 
     /**

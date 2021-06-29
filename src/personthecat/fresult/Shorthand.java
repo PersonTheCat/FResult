@@ -1,7 +1,6 @@
 package personthecat.fresult;
 
 import personthecat.fresult.exception.MissingProcedureException;
-import personthecat.fresult.exception.ResultUncheckedException;
 import personthecat.fresult.exception.ResultUnwrapException;
 import personthecat.fresult.exception.WrongErrorException;
 
@@ -54,20 +53,6 @@ class Shorthand {
     /** Shorthand for {@link ResultUnwrapException()}. */
     static ResultUnwrapException unwrapEx(String msg) {
         return new ResultUnwrapException(msg);
-    }
-
-    static ResultUnwrapException unwrapEx(String msg, Throwable e) {
-        return new ResultUnwrapException(msg, e);
-    }
-
-    /** Shorthand for {@link ResultUncheckedException()}. */
-    static ResultUncheckedException uncheckedEx(String msg) {
-        return new ResultUncheckedException(msg);
-    }
-
-    /** Formatted variant of {@link #uncheckedEx(String)} */
-    static ResultUncheckedException uncheckedExF(String msg, Object... args) {
-        return uncheckedEx(f(msg, args));
     }
 
     /** Shorthand for {@link WrongErrorException()}. */

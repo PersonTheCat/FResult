@@ -1,7 +1,6 @@
 package personthecat.fresult;
 
 import personthecat.fresult.exception.MissingProcedureException;
-import personthecat.fresult.exception.ResultUncheckedException;
 import personthecat.fresult.exception.WrongErrorException;
 
 import java.io.IOException;
@@ -16,7 +15,6 @@ public class Test {
             testWrongError();
             testInvalidProtocol();
             testValidProtocol();
-            testErrorCheck();
             testClose();
             testJoin();
         } catch (Exception e) {
@@ -57,17 +55,6 @@ public class Test {
             .get(Test::throwsISE);
     }
 
-    private static void testErrorCheck() {
-        try {
-            // Result#get called without handler.
-            Result.of(Test::throwsIOE).get();
-        } catch (ResultUncheckedException e) {
-            info("Unchecked error detected successfully.");
-            return;
-        }
-        throw runEx("No error thrown despite an unchecked error being present.");
-    }
-
     private static void testClose() {
         final Close test = Result.with(Close::new, Test::returnsClose).unwrap();
         if (test.closed) {
@@ -78,10 +65,10 @@ public class Test {
     }
 
     private static void testJoin() {
-        final Result<Void, RuntimeException> joint = Result.join(
-            Result.of(() -> {}),
-            Result.of(() -> { throw runEx("#2"); }),
-            Result.of(() -> {})
+        final Result.Pending<Void, RuntimeException> joint = Result.join(
+            Result.of(() -> {}).execute(),
+            Result.<Void, RuntimeException>of(() -> { throw runEx("#2"); }).execute(),
+            Result.of(() -> {}).execute()
         );
         joint.ifErr(e -> info("Error caught in joint handler: {}", e.getMessage()));
     }

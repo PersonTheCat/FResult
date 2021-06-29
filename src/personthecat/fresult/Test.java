@@ -66,9 +66,9 @@ public class Test {
 
     private static void testJoin() {
         final Result.Pending<Void, RuntimeException> joint = Result.join(
-            Result.of(() -> {}).execute(),
-            Result.<Void, RuntimeException>of(() -> { throw runEx("#2"); }).execute(),
-            Result.of(() -> {}).execute()
+            Result.of(() -> {}),
+            Result.of(() -> { throw runEx("#2"); }),
+            Result.of(() -> {})
         );
         joint.ifErr(e -> info("Error caught in joint handler: {}", e.getMessage()));
     }

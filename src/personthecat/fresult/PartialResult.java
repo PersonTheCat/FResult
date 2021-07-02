@@ -1,8 +1,10 @@
 package personthecat.fresult;
 
 import personthecat.fresult.exception.ResultUnwrapException;
+import personthecat.fresult.exception.WrongErrorException;
 import personthecat.fresult.interfaces.ThrowingFunction;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -26,48 +28,24 @@ public abstract class PartialResult<T, E extends Throwable> {
      *
      * @return true, if an error is present.
      */
+    @CheckReturnValue
     public abstract boolean isErr();
 
     /**
-     * Accepts an expression for what to do in the event of an error
-     * being present. Use this whenever you want to functionally handle
-     * both code paths (i.e. error vs. value).
-     *
+     * Accepts an expression for what to do in the event of an error being present.
+     * <p>
+     *   Use this whenever you want to functionally handle both code paths (i.e. error
+     *   vs. value).
+     * </p>
+     * @throws WrongErrorException If the underlying error is an unexpected type.
      * @param f A function consuming the error, if present.
      * @return This, or else a complete {@link Result}.
      */
     public abstract Result<T, E> ifErr(Consumer<E> f);
 
     /**
-     * Returns whether a value was yielded or no error occurred.
-     *
-     * e.g.
-     * <pre><code>
-     *   Result<Void, RuntimeException> result = getResult();
-     *   // Compute the result and proceed only if it does not err.
-     *   if (result.isOk()) {
-     *       ...
-     *   }
-     * </code></pre>
-     *
-     * @return true, if a value is present.
-     */
-    public abstract boolean isOk();
-
-    /**
-     * Accepts an expression for what to do in the event of no error
-     * being present. Use this whenever you want to functionally handle
-     * both code paths (i.e. error vs. value).
-     *
-     * @param f A function consuming the value, if present.
-     * @return This, or else a complete {@link Result}.
-     */
-    public abstract Result<T, E> ifOk(Consumer<T> f);
-
-    /**
-     * Accepts an expression for handling the expected error, if present.
-     * Use this whenever you want to get the error, but still have
-     * access to the Result wrapper.
+     * Attempts to retrieve the underlying value, if present, while also accounting for
+     * any potential errors.
      *
      * e.g.
      * <pre><code>
@@ -78,13 +56,24 @@ public abstract class PartialResult<T, E extends Throwable> {
      *
      * @return The underlying value, wrapped in {@link Optional}.
      */
+    @CheckReturnValue
     public Optional<T> get(Consumer<E> func) {
         return this.ifErr(func).get();
     }
 
     /**
-     * Attempts to retrieve the underlying value, asserting that one must
-     * exist.
+     * Converts this wrapper into a new type when accounting for both potential outcomes.
+     *
+     * @param ifOk The transformer applied if a value is present in the wrapper.
+     * @param ifErr The transformer applied if an error is present in the wrapper.
+     * @param <U> The type of value being output by this method.
+     * @return The output of either <code>ifOk</code> or <code>ifErr</code>.
+     */
+    @CheckReturnValue
+    public abstract <U> U fold(Function<T, U> ifOk, Function<E, U> ifErr);
+
+    /**
+     * Attempts to retrieve the underlying value, asserting that one must exist.
      *
      * @throws ResultUnwrapException Wraps the underlying error, if present.
      * @return The underlying value.
@@ -94,19 +83,19 @@ public abstract class PartialResult<T, E extends Throwable> {
     }
 
     /**
-     * Attempts to retrieve the underlying error, asserting that one must
-     * exist.
+     * Attempts to retrieve the underlying error, asserting that one must exist.
      *
      * @throws ResultUnwrapException If no error is present to be unwrapped.
      * @return The underlying error.
      */
+    @CheckReturnValue
     public E unwrapErr() {
         return expectErr("Attempted to unwrap a result with no error.");
     }
 
     /**
-     * Yields the underlying value, throwing a convenient, generic exception,
-     * if an error occurs.
+     * Yields the underlying value, throwing a convenient, generic exception, if an
+     * error occurs.
      *
      * e.g.
      * <pre><code>
@@ -116,25 +105,42 @@ public abstract class PartialResult<T, E extends Throwable> {
      * </code></pre>
      *
      * @throws ResultUnwrapException Wraps the underlying error, if present.
+     * @param message The message to display in the event of an error.
      * @return The underlying value.
      */
     public abstract T expect(String message);
 
-    /** Formatted variant of {@link #expect}. */
+    /**
+     * Formatted variant of {@link #expect}.
+     *
+     * @throws ResultUnwrapException Wraps the underlying error, if present.
+     * @param message The message to display in the event of an error.
+     * @param args A series of interpolated arguments (replacing <code>{}</code>).
+     * @return The underlying value
+     */
     public T expectF(String message, Object... args) {
         return expect(f(message, args));
     }
 
     /**
-     * Yields the underlying error, throwing a generic exception if no error
-     * is present.
+     * Yields the underlying error, throwing a generic exception if no error is present.
      *
      * @throws ResultUnwrapException If no error is present to be unwrapped.
+     * @param message The message to display in the event of an error.
      * @return The underlying error.
      */
+    @CheckReturnValue
     public abstract E expectErr(String message);
 
-    /** Formatted variant of {@link #expectErr}. */
+    /**
+     * Formatted variant of {@link #expectErr}.
+     *
+     * @throws ResultUnwrapException If no error is present to be unwrapped.
+     * @param message The message to display in the event of an error.
+     * @param args A series of interpolated arguments (replacing <code>{}</code>).
+     * @return The underlying error.
+     */
+    @CheckReturnValue
     public E expectErrF(String message, Object... args) {
         return expectErr(f(message, args));
     }
@@ -168,6 +174,7 @@ public abstract class PartialResult<T, E extends Throwable> {
      *             present.
      * @return The underlying value, or else func.apply(E).
      */
+    @CheckReturnValue
     public abstract T orElseGet(Function<E, T> f);
 
     /**
@@ -178,5 +185,6 @@ public abstract class PartialResult<T, E extends Throwable> {
      * @return The pending result of the new function, if an error is present,
      *         or else a complete {@link Result}.
      */
+    @CheckReturnValue
     public abstract PartialResult<T, E> orElseTry(ThrowingFunction<E, T, E> f);
 }

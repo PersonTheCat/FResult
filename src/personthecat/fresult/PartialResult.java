@@ -132,7 +132,7 @@ public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E>
      * <pre>
      *   // Runs an unsafe process, wrapping any original errors.
      *   Object result = getResult()
-     *     .expect("Unable to get value from result");
+     *     .expect("Unable to get value from result.");
      * </pre>
      *
      * @throws ResultUnwrapException Wraps the underlying error, if present.

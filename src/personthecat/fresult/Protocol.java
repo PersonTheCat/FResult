@@ -29,7 +29,7 @@ public class Protocol {
      * @return The current Protocol which now contains the procedure.
      */
     @CheckReturnValue
-    public <E extends Throwable> Protocol define(Class<E> type, Consumer<E> func) {
+    public <E extends Throwable> Protocol define(final Class<E> type, Consumer<E> func) {
         this.procedures.add(new Procedure<>(type, func));
         return this;
     }
@@ -46,7 +46,7 @@ public class Protocol {
      * @return The result of the operation.
      */
     @CheckReturnValue
-    public <T> Result<T, Throwable> of(ThrowingSupplier<T, Throwable> attempt) {
+    public <T> Result<T, Throwable> of(final ThrowingSupplier<T, Throwable> attempt) {
         final T value;
         try {
             value = attempt.get();
@@ -66,7 +66,7 @@ public class Protocol {
      * @return The result of the operation.
      */
     @CheckReturnValue
-    public Result<Void, Throwable> of(ThrowingRunnable<Throwable> attempt) {
+    public Result<Void, Throwable> of(final ThrowingRunnable<Throwable> attempt) {
         return this.of(Result.wrapVoid(attempt));
     }
 
@@ -82,7 +82,7 @@ public class Protocol {
      * @return The result of the operation.
      */
     @CheckReturnValue
-    public <T> Result<T, Throwable> any(ThrowingSupplier<T, Throwable> attempt) {
+    public <T> Result<T, Throwable> any(final ThrowingSupplier<T, Throwable> attempt) {
         return this.of(attempt);
     }
 
@@ -95,7 +95,7 @@ public class Protocol {
      * @return The result of the operation.
      */
     @CheckReturnValue
-    public Result<Void, Throwable> any(ThrowingRunnable<Throwable> attempt) {
+    public Result<Void, Throwable> any(final ThrowingRunnable<Throwable> attempt) {
         return this.of(attempt);
     }
 
@@ -109,7 +109,7 @@ public class Protocol {
      * @param <T> The type of value expected from this procedure.
      * @return A result which may either be a value, error, or empty.
      */
-    public <T> OptionalResult<T, Throwable> nullable(ThrowingSupplier<T, Throwable> attempt) {
+    public <T> OptionalResult<T, Throwable> nullable(final ThrowingSupplier<T, Throwable> attempt) {
         try {
             return Result.nullable(attempt.get());
         } catch (Throwable e) {
@@ -130,7 +130,7 @@ public class Protocol {
      * @param <T> The type of value expected from this procedure.
      * @return A result which may either be an optional value or an error.
      */
-    public <T> Result<Optional<T>, Throwable> wrappingOptional(ThrowingSupplier<T, Throwable> attempt) {
+    public <T> Result<Optional<T>, Throwable> wrappingOptional(final ThrowingSupplier<T, Throwable> attempt) {
         return this.of(() -> Optional.ofNullable(attempt.get()));
     }
 
@@ -143,7 +143,7 @@ public class Protocol {
      * @return The value yielded by the operation, wrapped in {@link Optional}.
      */
     @CheckReturnValue
-    public <T> Optional<T> get(ThrowingSupplier<T, Throwable> attempt) {
+    public <T> Optional<T> get(final ThrowingSupplier<T, Throwable> attempt) {
         return this.of(attempt).get();
     }
 
@@ -155,7 +155,7 @@ public class Protocol {
      * @param attempt A function which either yields a value or throws an
      *                exception.
      */
-    public void run(ThrowingRunnable<Throwable> attempt) {
+    public void run(final ThrowingRunnable<Throwable> attempt) {
         try {
             attempt.run();
         } catch (Throwable e) {
@@ -169,7 +169,7 @@ public class Protocol {
      * Attempts to handle the input exception, returning whether a procedure
      * is implemented.
      */
-    private boolean tryHandle(Throwable e) {
+    private boolean tryHandle(final Throwable e) {
         return procedures.stream().anyMatch(proc -> {
             if (proc.clazz.isInstance(e)) {
                 proc.func.accept(cast(e));
@@ -180,7 +180,7 @@ public class Protocol {
     }
 
     @SuppressWarnings("unchecked")
-    private <E extends Throwable> E cast(Throwable e) {
+    private <E extends Throwable> E cast(final Throwable e) {
         return (E) e;
     }
 
@@ -189,7 +189,7 @@ public class Protocol {
         final Class<T> clazz;
         final Consumer<T> func;
 
-        Procedure(Class<T> clazz, Consumer<T> func) {
+        Procedure(final Class<T> clazz, final Consumer<T> func) {
             this.clazz = clazz;
             this.func = func;
         }

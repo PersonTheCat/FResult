@@ -10,7 +10,7 @@ import static personthecat.fresult.Shorthand.runEx;
 
 public class Test {
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         try {
             testErrorHandling();
             testWrongError();
@@ -18,7 +18,7 @@ public class Test {
             testValidProtocol();
             testClose();
             testJoin();
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw runEx("Test failed.", e);
         }
         info("All tests passing!");
@@ -86,11 +86,11 @@ public class Test {
         throw new IllegalAccessException("Error not caught by handler.");
     }
 
-    private static Close returnsClose(Close c) {
+    private static Close returnsClose(final Close c) {
         return c;
     }
 
-    private static void info(String msg, Object... args) {
+    private static void info(final String msg, final Object... args) {
         System.out.println(f(msg, args));
     }
 

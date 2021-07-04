@@ -93,8 +93,8 @@ public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E>
     T orElseGet(final Function<E, T> f);
 
     /**
-     * Maps to a new Result if an error is present. Use this whenever
-     * your first and second attempt at retrieving a value may fail.
+     * Maps to a new Result if an error is present. Use this whenever your first and
+     * second attempt at retrieving a value may fail.
      *
      * @param f A new function to attempt in the presence of an error.
      * @return The pending result of the new function, if an error is present,
@@ -102,6 +102,17 @@ public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E>
      */
     @CheckReturnValue
     PartialResult<T, E> orElseTry(final ThrowingFunction<E, T, E> f);
+
+    /**
+     * Variant of {@link #orElseTry(ThrowingFunction)} which handles the error when
+     * given a specific {@link Protocol}.
+     *
+     * @param protocol Instructions for handling errors beyond this point.
+     * @param f A new function to attempt in the presence of an error.
+     * @return A result which may contain either a value or <b>any</b> error.
+     */
+    @CheckReturnValue
+    Result<T, Throwable> orElseTry(final Protocol protocol, final ThrowingFunction<E, T, Throwable> f);
 
     /**
      * Attempts to retrieve the underlying value, asserting that one must exist.

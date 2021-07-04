@@ -104,6 +104,18 @@ public interface PartialOptionalResult<T, E extends Throwable> extends BasicResu
     boolean isAnyErr();
 
     /**
+     * Accepts an expression for what to do in the event of an error being present.
+     * <p>
+     *   Use this whenever you want to functionally handle both code paths (i.e. error
+     *   vs. value).
+     * </p>
+     * @throws WrongErrorException If the underlying error is an unexpected type.
+     * @param f A function consuming the error, if present.
+     * @return This, or else a complete {@link Result}.
+     */
+    OptionalResult<T, E> ifErr(final Consumer<E> f);
+
+    /**
      * Attempts to retrieve the underlying value, if present, while also accounting for
      * any potential errors.
      *

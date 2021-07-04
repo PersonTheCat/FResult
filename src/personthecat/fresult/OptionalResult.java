@@ -2,6 +2,8 @@ package personthecat.fresult;
 
 import personthecat.fresult.exception.ResultUnwrapException;
 import personthecat.fresult.exception.WrongErrorException;
+import personthecat.fresult.functions.ThrowingFunction;
+import personthecat.fresult.functions.ThrowingSupplier;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Optional;
@@ -160,6 +162,28 @@ public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E
      */
     @CheckReturnValue
     T orElseGet(final Supplier<T> f);
+
+    /**
+     * Variant of {@link Result#orElseTry(ThrowingFunction)} which ignores any errors present
+     * in the wrapper.
+     *
+     * @param f A new function to attempt in the presence of an error.
+     * @return The pending result of the new function, if an error is present,
+     *         or else a complete {@link Result}.
+     */
+    @CheckReturnValue
+    PartialResult<T, E> orElseTry(final ThrowingSupplier<T, E> f);
+
+    /**
+     * Variant of {@link Result#orElseTry(ThrowingFunction)} which handles the error when
+     * given a specific {@link Protocol}.
+     *
+     * @param protocol Instructions for handling errors beyond this point.
+     * @param f A new function to attempt in the presence of an error.
+     * @return A result which may contain either a value or <b>any</b> error.
+     */
+    @CheckReturnValue
+    Result<T, Throwable> orElseTry(final Protocol protocol, final ThrowingSupplier<T, Throwable> f);
 
     /**
      * Attempts to retrieve the underlying value, asserting that one must exist.

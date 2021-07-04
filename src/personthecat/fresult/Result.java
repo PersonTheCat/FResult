@@ -308,8 +308,25 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
      * @return A result which may either be a value, an error, or null.
      */
     @CheckReturnValue
-    static <T, E extends Throwable> PendingNullable<T, E> nullable(final ThrowingSupplier<T, E> attempt) {
+    static <T, E extends Throwable> PartialOptionalResult<T, E> nullable(final ThrowingSupplier<T, E> attempt) {
         return new PendingNullable<>(attempt);
+    }
+
+    /**
+     * Variant of {@link Result#any} which is allowed to contain null values.
+     *
+     * @see Result#nullable
+     * @param attempt An expression which either yields a value, throws <b>any</b> error,
+     *                or returns null.
+     * @param <T> The type of value being consumed by the wrapper.
+     * @return A result which may either be a value, <b>any</b> error, or null.
+     */
+    static <T> OptionalResult<T, Throwable> anyNullable(final ThrowingSupplier<T, Throwable> attempt) {
+        try {
+            return nullable(attempt.get());
+        } catch (Throwable t) {
+            return err(t);
+        }
     }
 
     /**
@@ -346,6 +363,22 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
      */
     static <T, E extends Throwable> Pending<Optional<T>, E> wrappingOptional(final ThrowingSupplier<T, E> attempt) {
         return new Pending<>(() -> Optional.ofNullable(attempt.get()));
+    }
+
+    /**
+     * Variant of {@link Result#any} which wraps the output value in {@link Optional}.
+     *
+     * @param attempt An expression which either yields a value, throws <b>any</b>
+     *                exception, or returns null.
+     * @param <T> The type of value being consumed by the wrapper.
+     * @return A result which may either be an optional value or <b>any</b> error.
+     */
+    static <T> Result<Optional<T>, Throwable> anyWrappingOptional(final ThrowingSupplier<T, Throwable> attempt) {
+        try {
+            return ok(Optional.ofNullable(attempt.get()));
+        } catch (Throwable t) {
+            return err(t);
+        }
     }
 
     /**
@@ -689,6 +722,30 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
      */
     @CheckReturnValue
     PartialResult<T, E> orElseTry(final ThrowingFunction<E, T, E> f);
+
+    /**
+     * Variant of {@link #orElseTry(ThrowingFunction)} which handles the error when
+     * given a specific {@link Protocol}.
+     *
+     * @param protocol Instructions for handling errors beyond this point.
+     * @param f A new function to attempt in the presence of an error.
+     * @return A result which may contain either a value or <b>any</b> error.
+     */
+    @CheckReturnValue
+    Result<T, Throwable> orElseTry(final Protocol protocol, final ThrowingFunction<E, T, Throwable> f);
+
+    /**
+     * Variant of {@link #orElseTry(Protocol, ThrowingFunction)} which does not
+     * consume the underlying error.
+     *
+     * @param protocol Instructions for handling errors beyond this point.
+     * @param f A new function to attempt in the presence of an error.
+     * @return A result which may contain either a value or <b>any</b> error.
+     */
+    @CheckReturnValue
+    default Result<T, Throwable> orElseTry(final Protocol protocol, final ThrowingSupplier<T, Throwable> f) {
+        return this.orElseTry(protocol, e -> f.get());
+    }
 
     /**
      * Transposes a result with an optional value into an optional result.
@@ -1044,6 +1101,15 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
         }
 
         /**
+         * @deprecated always fails.
+         */
+        @Override
+        @Deprecated
+        public void expectEmptyF(final String message, final Object... args) {
+            throw new AssertionError(f(message, args));
+        }
+
+        /**
          * @deprecated Call {@link Value#expose} instead.
          */
         @Override
@@ -1091,8 +1157,37 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public PartialResult<T, E> orElseTry(final ThrowingFunction<E, T, E> f) {
+        public Value<T, E> orElseTry(final ThrowingFunction<E, T, E> f) {
             return this;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        public Value<T, E> orElseTry(final ThrowingSupplier<T, E> f) {
+            return this;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("unchecked")
+        public Value<T, Throwable> orElseTry(final Protocol protocol, final ThrowingFunction<E, T, Throwable> f) {
+            return (Value<T, Throwable>) this;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("unchecked")
+        public Result<T, Throwable> orElseTry(final Protocol protocol, final ThrowingSupplier<T, Throwable> f) {
+            return (Value<T, Throwable>) this;
         }
 
         @Override
@@ -1157,6 +1252,15 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
         @Deprecated
         public E unwrapErr() {
             throw unwrapEx("Attempted to unwrap a result with no error.");
+        }
+
+        /**
+         * @deprecated Always fails.
+         */
+        @Override
+        @Deprecated
+        public void assertEmpty() {
+            throw new AssertionError("Wrapper contains a value.");
         }
     }
 
@@ -1337,6 +1441,15 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
         }
 
         /**
+         * @deprecated Always fails.
+         */
+        @Override
+        @Deprecated
+        public void expectEmptyF(final String message, final Object... args) {
+            throw new AssertionError(f(message, args));
+        }
+
+        /**
          * @deprecated Call {@link Error#expose} instead.
          */
         @Override
@@ -1396,6 +1509,33 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
             } catch (ClassCastException ignored) {
                 throw wrongErrorFound(this.error);
             }
+        }
+
+        /**
+         * @deprecated Always runs function.
+         */
+        @Override
+        @Deprecated
+        public PartialResult<T, E> orElseTry(final ThrowingSupplier<T, E> f) {
+            return Result.of(f);
+        }
+
+        /**
+         * @deprecated Always runs function.
+         */
+        @Override
+        @Deprecated
+        public Result<T, Throwable> orElseTry(final Protocol protocol, final ThrowingFunction<E, T, Throwable> f) {
+            return protocol.of(() -> f.apply(this.error));
+        }
+
+        /**
+         * @deprecated Always runs function.
+         */
+        @Override
+        @Deprecated
+        public Result<T, Throwable> orElseTry(final Protocol protocol, final ThrowingSupplier<T, Throwable> f) {
+            return protocol.of(f);
         }
 
         @Override
@@ -1471,6 +1611,15 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
         @Deprecated
         public E unwrapErr() {
             return this.error;
+        }
+
+        /**
+         * @deprecated Always fails.
+         */
+        @Override
+        @Deprecated
+        public void assertEmpty() {
+            throw new AssertionError("Wrapper contains error.");
         }
     }
 
@@ -1610,6 +1759,24 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
         @Deprecated
         public T orElseGet(final Supplier<T> f) {
             return f.get();
+        }
+
+        /**
+         * @deprecated Always runs function.
+         */
+        @Override
+        @Deprecated
+        public PartialResult<T, E> orElseTry(final ThrowingSupplier<T, E> f) {
+            return Result.of(f);
+        }
+
+        /**
+         * @deprecated Always runs function.
+         */
+        @Override
+        @Deprecated
+        public Result<T, Throwable> orElseTry(final Protocol protocol, final ThrowingSupplier<T, Throwable> f) {
+            return protocol.of(f);
         }
 
         /**
@@ -1811,6 +1978,11 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
             return this.execute().orElseTry(f);
         }
 
+        @Override
+        public Result<T, Throwable> orElseTry(final Protocol protocol, final ThrowingFunction<E, T, Throwable> f) {
+            return this.execute().orElseTry(protocol, f);
+        }
+
         /**
          * Lazily initializes and returns the underlying result object contained within this
          * partial wrapper. This method is and must always be executed in some way in order
@@ -1891,6 +2063,11 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
         @CheckReturnValue
         public boolean isAnyErr() {
             return this.execute().isErr();
+        }
+
+        @Override
+        public OptionalResult<T, E> ifErr(final Consumer<E> f) {
+            return this.execute().ifErr(f);
         }
 
         @Override

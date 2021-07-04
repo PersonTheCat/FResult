@@ -159,7 +159,7 @@ public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E
      * @return The underlying value, or else func.get().
      */
     @CheckReturnValue
-    T orElseGet(Supplier<T> f);
+    T orElseGet(final Supplier<T> f);
 
     /**
      * Attempts to retrieve the underlying value, asserting that one must exist.
@@ -180,6 +180,15 @@ public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E
     @CheckReturnValue
     default E unwrapErr() {
         return expectErr("Attempted to unwrap a result with no error.");
+    }
+
+    /**
+     * Asserts that no value or error will be present within the wrapper.
+     *
+     * @throws ResultUnwrapException If a value or an error is present.
+     */
+    default void assertEmpty() {
+        this.expectEmpty("Wrapper contains a value or error.");
     }
 
     /**
@@ -234,6 +243,25 @@ public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E
      */
     default E expectErrF(final String message, final Object... args) {
         return this.expectErr(f(message, args));
+    }
+
+    /**
+     * Asserts that no value or error will be present within the wrapper.
+     *
+     * @param message The message to display in the event of an error.
+     * @throws ResultUnwrapException If a value or an error is present.
+     */
+    void expectEmpty(final String message);
+
+    /**
+     * Formatted variant of {@link #expectEmpty}.
+     *
+     * @param message The message to display in the event of an error.
+     * @param args A series of interpolated arguments (replacing <code>{}</code>).
+     * @throws ResultUnwrapException If a value or an error is present.
+     */
+    default void expectEmptyF(final String message, final Object... args) {
+        this.expectEmpty(f(message, args));
     }
 
     /**

@@ -134,7 +134,27 @@ public interface PartialOptionalResult<T, E extends Throwable> extends BasicResu
      * @return The underlying value.
      */
     default T unwrap() {
-        return expect("Attempted to unwrap a result with no value.");
+        return this.expect("Attempted to unwrap a result with no value.");
+    }
+
+    /**
+     * Attempts to retrieve the underlying error, asserting that one must exist.
+     *
+     * @throws ResultUnwrapException If no error is present to be unwrapped.
+     * @return The underlying error.
+     */
+    @CheckReturnValue
+    default Throwable unwrapErr() {
+        return expectErr("Attempted to unwrap a result with no error.");
+    }
+
+    /**
+     * Asserts that no value or error will be present within the wrapper.
+     *
+     * @throws ResultUnwrapException If a value or an error is present.
+     */
+    default void assertEmpty() {
+        this.expectEmpty("Wrapper contains a value or error.");
     }
 
     /**
@@ -163,7 +183,26 @@ public interface PartialOptionalResult<T, E extends Throwable> extends BasicResu
      * @return The underlying value
      */
     default T expectF(final String message, final Object... args) {
-        return expect(f(message, args));
+        return this.expect(f(message, args));
+    }
+
+    /**
+     * Asserts that no value or error will be present within the wrapper.
+     *
+     * @param message The message to display in the event of an error.
+     * @throws ResultUnwrapException If a value or an error is present.
+     */
+    void expectEmpty(final String message);
+
+    /**
+     * Formatted variant of {@link #expectEmpty}.
+     *
+     * @param message The message to display in the event of an error.
+     * @param args A series of interpolated arguments (replacing <code>{}</code>).
+     * @throws ResultUnwrapException If a value or an error is present.
+     */
+    default void expectEmptyF(final String message, final Object... args) {
+        this.expectEmpty(f(message, args));
     }
 
     /**
@@ -187,7 +226,9 @@ public interface PartialOptionalResult<T, E extends Throwable> extends BasicResu
      * @param args A series of interpolated arguments (replacing <code>{}</code>).
      * @return The underlying error.
      */
-    Throwable expectErrF(final String message, final Object... args);
+    default Throwable expectErrF(final String message, final Object... args) {
+        return this.expectErr(f(message, args));
+    }
 
     /**
      * Variant of {@link #unwrap} which throws the original error, if applicable.

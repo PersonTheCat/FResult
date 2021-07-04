@@ -462,7 +462,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
             for (Pending<Void, E> result : results) {
                 try {
                     result.orElseThrow();
-                } catch (Throwable e) {
+                } catch (final Throwable e) {
                     throw Result.<E>errorFound(e);
                 }
             }
@@ -647,7 +647,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
      * @return The underlying value, or else the input.
      */
     @CheckReturnValue
-    T orElse(T val);
+    T orElse(final T val);
 
     /**
      * Variant of {@link PartialResult#orElseGet(Function)} which does not specifically
@@ -658,7 +658,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
      * @return The underlying value, or else func.get().
      */
     @CheckReturnValue
-    T orElseGet(Supplier<T> f);
+    T orElseGet(final Supplier<T> f);
 
     /**
      * Variant of {@link Result#get()} which simultaneously handles a potential error
@@ -711,7 +711,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
      * @return A new Result with its value mapped.
      */
     @CheckReturnValue
-    <M> Result<M, E> map(Function<T, M> f);
+    <M> Result<M, E> map(final Function<T, M> f);
 
     /**
      * Replaces the underlying error with the result of func.apply().
@@ -722,7 +722,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
      * @return A new Result with its error mapped.
      */
     @CheckReturnValue
-    <E2 extends Throwable> Result<T, E2> mapErr(Function<E, E2> f);
+    <E2 extends Throwable> Result<T, E2> mapErr(final Function<E, E2> f);
 
     /**
      * Replaces the entire value with a new result, if present.
@@ -735,7 +735,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
      *         else this.
      */
     @CheckReturnValue
-    Result<T, E> flatMap(Function<T, Result<T, E>> f);
+    Result<T, E> flatMap(final Function<T, Result<T, E>> f);
 
     /**
      * Replaces the entire value with a new result, if present.
@@ -748,7 +748,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
      *         or else a complete {@link Result}.
      */
     @CheckReturnValue
-    Result<T, E> flatMapErr(Function<E, Result<T, E>> f);
+    Result<T, E> flatMapErr(final Function<E, Result<T, E>> f);
 
     /**
      * Attempts to retrieve the underlying value, asserting that one must exist.
@@ -757,7 +757,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
      * @return The underlying value.
      */
     default T unwrap() {
-        return expect("Attempted to unwrap a result with no value.");
+        return this.expect("Attempted to unwrap a result with no value.");
     }
 
     /**
@@ -768,7 +768,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
      */
     @CheckReturnValue
     default E unwrapErr() {
-        return expectErr("Attempted to unwrap a result with no error.");
+        return this.expectErr("Attempted to unwrap a result with no error.");
     }
 
     /**
@@ -819,8 +819,8 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
      * @return The underlying error.
      */
     @CheckReturnValue
-    default E expectErrF(String message, Object... args) {
-        return expectErr(f(message, args));
+    default E expectErrF(final String message, final Object... args) {
+        return this.expectErr(f(message, args));
     }
 
     /**
@@ -853,8 +853,8 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
 
         private final T value;
 
-        private Value(T value) {
-            this.value = Objects.requireNonNull(value);
+        private Value(final T value) {
+            this.value = Objects.requireNonNull(value, "Value may not be null");
         }
 
         /**
@@ -867,23 +867,35 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
             return this.value;
         }
 
+        /**
+         * @deprecated Always returns this.
+         */
         @Override
-        public Value<T, E> defaultIfEmpty(Supplier<T> defaultGetter) {
-            return this;
-        }
-
-        @Override
-        public boolean isEmpty() {
-            return false;
-        }
-
-        @Override
-        public Value<T, E> ifEmpty(Runnable f) {
+        @Deprecated
+        public Value<T, E> defaultIfEmpty(final Supplier<T> defaultGetter) {
             return this;
         }
 
         /**
-         * @deprecated Always false.
+         * @deprecated Always returns false.
+         */
+        @Override
+        @Deprecated
+        public boolean isEmpty() {
+            return false;
+        }
+
+        /**
+         * @deprecated Never runs..
+         */
+        @Override
+        @Deprecated
+        public Value<T, E> ifEmpty(final Runnable f) {
+            return this;
+        }
+
+        /**
+         * @deprecated Always returns false.
          */
         @Override
         @Deprecated
@@ -891,12 +903,20 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
             return false;
         }
 
+        /**
+         * @deprecated Always returns false.
+         */
         @Override
-        public boolean isErr(Class<? super E> clazz) {
+        @Deprecated
+        public boolean isErr(final Class<? super E> clazz) {
             return false;
         }
 
+        /**
+         * @deprecated Always returns false.
+         */
         @Override
+        @Deprecated
         public boolean isAnyErr() {
             return false;
         }
@@ -911,7 +931,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
         }
 
         /**
-         * @deprecated Always true.
+         * @deprecated Always returns true.
          */
         @Override
         @Deprecated
@@ -924,13 +944,17 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public Value<T, E> ifOk(Consumer<T> f) {
+        public Value<T, E> ifOk(final Consumer<T> f) {
             f.accept(this.value);
             return this;
         }
 
+        /**
+         * @deprecated Always returns full. Use {@link Value#expose}.
+         */
         @Override
-        public Optional<T> get(Consumer<E> func) {
+        @Deprecated
+        public Optional<T> get(final Consumer<E> func) {
             return Optional.of(this.value);
         }
 
@@ -966,7 +990,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public <U> U fold(Function<T, U> ifOk, Function<E, U> ifErr) {
+        public <U> U fold(final Function<T, U> ifOk, final Function<E, U> ifErr) {
             return ifOk.apply(this.value);
         }
 
@@ -975,12 +999,15 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public T expect(String message) {
+        public T expect(final String message) {
             return this.value;
         }
 
+        /**
+         * @deprecated Call {@link Value#expose} instead.
+         */
         @Override
-        public T expectF(String message, Object... args) {
+        public T expectF(final String message, final Object... args) {
             return this.value;
         }
 
@@ -989,16 +1016,33 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public E expectErr(String message) {
+        public E expectErr(final String message) {
             throw unwrapEx(message);
         }
 
+        /**
+         * @deprecated Always fails.
+         */
         @Override
-        public E expectErrF(String message, Object... args) {
+        @Deprecated
+        public E expectErrF(final String message, final Object... args) {
             throw unwrapEx(f(message, args));
         }
 
+        /**
+         * @deprecated Always fails.
+         */
         @Override
+        @Deprecated
+        public void expectEmpty(final String message) {
+            throw new AssertionError(message);
+        }
+
+        /**
+         * @deprecated Call {@link Value#expose} instead.
+         */
+        @Override
+        @Deprecated
         public T orElseThrow() {
             return this.value;
         }
@@ -1015,7 +1059,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public T orElse(T val) {
+        public T orElse(final T val) {
             return this.value;
         }
 
@@ -1024,7 +1068,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public T orElseGet(Supplier<T> f) {
+        public T orElseGet(final Supplier<T> f) {
             return this.value;
         }
 
@@ -1033,7 +1077,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public T orElseGet(Function<E, T> f) {
+        public T orElseGet(final Function<E, T> f) {
             return this.value;
         }
 
@@ -1042,7 +1086,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public PartialResult<T, E> orElseTry(ThrowingFunction<E, T, E> f) {
+        public PartialResult<T, E> orElseTry(final ThrowingFunction<E, T, E> f) {
             return this;
         }
 
@@ -1061,7 +1105,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public <M> Result<M, E> map(Function<T, M> f) {
+        public <M> Result<M, E> map(final Function<T, M> f) {
             return new Value<>(f.apply(this.value));
         }
 
@@ -1070,7 +1114,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public <E2 extends Throwable> Result<T, E2> mapErr(Function<E, E2> f) {
+        public <E2 extends Throwable> Result<T, E2> mapErr(final Function<E, E2> f) {
             return new Value<>(this.value);
         }
 
@@ -1079,7 +1123,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public Result<T, E> flatMap(Function<T, Result<T, E>> f) {
+        public Result<T, E> flatMap(final Function<T, Result<T, E>> f) {
             return f.apply(this.value);
         }
 
@@ -1088,16 +1132,24 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public Result<T, E> flatMapErr(Function<E, Result<T, E>> f) {
+        public Result<T, E> flatMapErr(final Function<E, Result<T, E>> f) {
             return this;
         }
 
+        /**
+         * @deprecated Call {@link Value#expose} instead.
+         */
         @Override
+        @Deprecated
         public T unwrap() {
             return this.value;
         }
 
+        /**
+         * @deprecated Always fails.
+         */
         @Override
+        @Deprecated
         public E unwrapErr() {
             throw unwrapEx("Attempted to unwrap a result with no error.");
         }
@@ -1113,8 +1165,8 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
 
         private final E error;
 
-        private Error(E error) {
-            this.error = Objects.requireNonNull(error);
+        private Error(final E error) {
+            this.error = Objects.requireNonNull(error, "Error may not be null");
         }
 
         /**
@@ -1127,23 +1179,35 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
             return this.error;
         }
 
+        /**
+         * @deprecated Always returns this.
+         */
         @Override
-        public Error<T, E> defaultIfEmpty(Supplier<T> defaultGetter) {
-            return this;
-        }
-
-        @Override
-        public boolean isEmpty() {
-            return false;
-        }
-
-        @Override
-        public Error<T, E> ifEmpty(Runnable f) {
+        @Deprecated
+        public Error<T, E> defaultIfEmpty(final Supplier<T> defaultGetter) {
             return this;
         }
 
         /**
-         * @deprecated Always true.
+         * @deprecated Always returns false.
+         */
+        @Override
+        @Deprecated
+        public boolean isEmpty() {
+            return false;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        public Error<T, E> ifEmpty(final Runnable f) {
+            return this;
+        }
+
+        /**
+         * @deprecated Always returns true.
          */
         @Override
         @Deprecated
@@ -1156,7 +1220,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public Error<T, E> ifErr(Consumer<E> f) {
+        public Error<T, E> ifErr(final Consumer<E> f) {
             try {
                 f.accept(this.error);
             } catch (ClassCastException ignored) {
@@ -1166,7 +1230,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
         }
 
         /**
-         * @deprecated Always false.
+         * @deprecated Always returns false.
          */
         @Override
         @Deprecated
@@ -1179,12 +1243,16 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public Error<T, E> ifOk(Consumer<T> f) {
+        public Error<T, E> ifOk(final Consumer<T> f) {
             return this;
         }
 
+        /**
+         * @deprecated Always returns empty.
+         */
         @Override
-        public Optional<T> get(Consumer<E> func) {
+        @Deprecated
+        public Optional<T> get(final Consumer<E> func) {
             return Optional.empty();
         }
 
@@ -1210,7 +1278,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public <U> U fold(Function<T, U> ifOk, Function<E, U> ifErr) {
+        public <U> U fold(final Function<T, U> ifOk, final Function<E, U> ifErr) {
             try {
                 return ifErr.apply(this.error);
             } catch (ClassCastException ignored) {
@@ -1223,12 +1291,16 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public T expect(String message) {
+        public T expect(final String message) {
             throw unwrapEx(message);
         }
 
+        /**
+         * @deprecated Always fails.
+         */
         @Override
-        public T expectF(String message, Object... args) {
+        @Deprecated
+        public T expectF(final String message, final Object... args) {
             throw unwrapEx(f(message, args));
         }
 
@@ -1237,21 +1309,42 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public E expectErr(String message) {
+        public E expectErr(final String message) {
             return this.error;
         }
 
+        /**
+         * @deprecated Call {@link Error#expose} instead.
+         */
         @Override
-        public E expectErrF(String message, Object... args) {
+        @Deprecated
+        public E expectErrF(final String message, final Object... args) {
             return this.error;
         }
 
+        /**
+         * @deprecated Always fails.
+         */
         @Override
+        @Deprecated
+        public void expectEmpty(final String message) {
+            throw new AssertionError(message);
+        }
+
+        /**
+         * @deprecated Call {@link Error#expose} instead.
+         */
+        @Override
+        @Deprecated
         public T orElseThrow() throws E {
             throw this.error;
         }
 
+        /**
+         * @deprecated Call {@link Error#expose} instead.
+         */
         @Override
+        @Deprecated
         public void throwIfErr() throws E {
             throw this.error;
         }
@@ -1261,7 +1354,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public T orElse(T val) {
+        public T orElse(final T val) {
             return val;
         }
 
@@ -1270,16 +1363,16 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public T orElseGet(Supplier<T> f) {
+        public T orElseGet(final Supplier<T> f) {
             return f.get();
         }
 
         /**
-         * @deprecated Always returns
+         * @deprecated Always returns output of <code>f</code>.
          */
         @Override
         @Deprecated
-        public T orElseGet(Function<E, T> f) {
+        public T orElseGet(final Function<E, T> f) {
             try {
                 return f.apply(this.error);
             } catch (ClassCastException ignored) {
@@ -1292,7 +1385,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public Pending<T, E> orElseTry(ThrowingFunction<E, T, E> f) {
+        public Pending<T, E> orElseTry(final ThrowingFunction<E, T, E> f) {
             try {
                 return Result.of(() -> f.apply(this.error));
             } catch (ClassCastException ignored) {
@@ -1314,7 +1407,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public <M> Result<M, E> map(Function<T, M> f) {
+        public <M> Result<M, E> map(final Function<T, M> f) {
             try {
                 return new Error<>(this.error);
             } catch (ClassCastException ignored) {
@@ -1322,10 +1415,12 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
             }
         }
 
-        /** @deprecated Always returns other. */
+        /**
+         * @deprecated Always returns other.
+         */
         @Override
         @Deprecated
-        public <E2 extends Throwable> Result<T, E2> mapErr(Function<E, E2> f) {
+        public <E2 extends Throwable> Result<T, E2> mapErr(final Function<E, E2> f) {
             try {
                 return new Error<>(f.apply(this.error));
             } catch (ClassCastException ignored) {
@@ -1338,7 +1433,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public Result<T, E> flatMap(Function<T, Result<T, E>> f) {
+        public Result<T, E> flatMap(final Function<T, Result<T, E>> f) {
             return this;
         }
 
@@ -1347,7 +1442,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public Result<T, E> flatMapErr(Function<E, Result<T, E>> f) {
+        public Result<T, E> flatMapErr(final Function<E, Result<T, E>> f) {
             try {
                 return f.apply(this.error);
             } catch (ClassCastException ignored) {
@@ -1355,17 +1450,32 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
             }
         }
 
+        /**
+         * @deprecated Always fails.
+         */
         @Override
+        @Deprecated
         public T unwrap() {
             throw unwrapEx("Attempted to unwrap a result with no value.");
         }
 
+        /**
+         * @deprecated Call {@link Error#expose} instead.
+         */
         @Override
+        @Deprecated
         public E unwrapErr() {
             return this.error;
         }
     }
 
+    /**
+     * An implementation of {@link OptionalResult} which is the outcome of neither success
+     * nor an error. Always returned as a singleton instance.
+     *
+     * @param <T> A dummy parameter for the call site
+     * @param <E> The type of error being wrapped
+     */
     class Empty<T, E extends Throwable> implements OptionalResult<T, E>, PartialOptionalResult<T, E> {
 
         static final Empty<?, ?> INSTANCE = new Empty<>();
@@ -1373,43 +1483,27 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
         private Empty() {}
 
         @Override
-        public Value<T, E> defaultIfEmpty(Supplier<T> defaultGetter) {
+        public Value<T, E> defaultIfEmpty(final Supplier<T> defaultGetter) {
             return new Value<>(Objects.requireNonNull(defaultGetter.get(), "Default getter"));
         }
 
+        /**
+         * @deprecated Always returns true.
+         */
         @Override
+        @Deprecated
         public boolean isEmpty() {
             return true;
         }
 
         /**
-         * @deprecated Always executes.
+         * @deprecated Always runs.
          */
         @Override
         @Deprecated
         @CheckReturnValue
-        public Empty<T, E> ifEmpty(Runnable f) {
+        public Empty<T, E> ifEmpty(final Runnable f) {
             f.run();
-            return this;
-        }
-
-        @Override
-        public boolean isErr() {
-            return false;
-        }
-
-        @Override
-        public Empty<T, E> ifErr(Consumer<E> f) {
-            return this;
-        }
-
-        @Override
-        public boolean isOk() {
-            return false;
-        }
-
-        @Override
-        public Empty<T, E> ifOk(Consumer<T> f) {
             return this;
         }
 
@@ -1418,7 +1512,42 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public boolean isErr(Class<? super E> clazz) {
+        public boolean isErr() {
+            return false;
+        }
+
+        /**
+         * @deprecated Never runs.
+         */
+        @Override
+        @Deprecated
+        public Empty<T, E> ifErr(final Consumer<E> f) {
+            return this;
+        }
+        /**
+         * @deprecated Always returns false.
+         */
+        @Override
+        @Deprecated
+        public boolean isOk() {
+            return false;
+        }
+
+        /**
+         * @deprecated Never runs.
+         */
+        @Override
+        @Deprecated
+        public Empty<T, E> ifOk(final Consumer<T> f) {
+            return this;
+        }
+
+        /**
+         * @deprecated Always returns false.
+         */
+        @Override
+        @Deprecated
+        public boolean isErr(final Class<? super E> clazz) {
             return false;
         }
 
@@ -1438,43 +1567,87 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
         @Override
         @Deprecated
         @CheckReturnValue
-        public Optional<T> get(Consumer<E> func) {
+        public Optional<T> get(final Consumer<E> func) {
             return Optional.empty();
         }
 
+        /**
+         * @deprecated Always returns empty.
+         */
         @Override
+        @Deprecated
         public Optional<T> get() {
             return Optional.empty();
         }
 
+        /**
+         * @deprecated Always returns empty.
+         */
         @Override
+        @Deprecated
         public Optional<E> getErr() {
             return Optional.empty();
         }
 
+        /**
+         * @deprecated Always returns val.
+         */
         @Override
-        public T orElse(T val) {
+        @Deprecated
+        public T orElse(final T val) {
             return val;
         }
 
+        /**
+         * @deprecated Always returns val.
+         */
         @Override
-        public T orElseGet(Supplier<T> f) {
+        @Deprecated
+        public T orElseGet(final Supplier<T> f) {
             return f.get();
         }
 
+        /**
+         * @deprecated Always returns empty.
+         */
         @Override
+        @Deprecated
         public Optional<Throwable> getAnyErr() {
             return Optional.empty();
         }
 
+        /**
+         * @deprecated Always fails.
+         */
         @Override
+        @Deprecated
         public T unwrap() {
             throw unwrapEx("Attempted to unwrap a result with no value.");
         }
 
+        /**
+         * @deprecated Always fails.
+         */
         @Override
+        @Deprecated
         public E unwrapErr() {
             throw unwrapEx("Attempted to unwrap a result with no error.");
+        }
+
+        /**
+         * @deprecated Does nothing.
+         */
+        @Override
+        @Deprecated
+        public void assertEmpty() {}
+
+        /**
+         * @deprecated Always throws NPE.
+         */
+        @Override
+        @Deprecated
+        public T expect(final String message) {
+            throw new NullPointerException(message);
         }
 
         /**
@@ -1482,26 +1655,47 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public T expect(String message) {
-            throw new NullPointerException(message);
-        }
-
-        @Override
-        public T expectF(String message, Object... args) {
+        public T expectF(final String message, final Object... args) {
             throw new NullPointerException(f(message, args));
         }
 
+        /**
+         * @deprecated Always throws NPE.
+         */
         @Override
-        public E expectErr(String message) {
+        @Deprecated
+        public E expectErr(final String message) {
             throw new NullPointerException(message);
         }
 
+        /**
+         * @deprecated Always throws NPE.
+         */
         @Override
-        public E expectErrF(String message, Object... args) {
+        @Deprecated
+        public E expectErrF(final String message, final Object... args) {
             throw new NullPointerException(f(message, args));
         }
 
+        /**
+         * @deprecated Does nothing.
+         */
         @Override
+        @Deprecated
+        public void expectEmpty(final String message) {}
+
+        /**
+         * @deprecated Does nothing.
+         */
+        @Override
+        @Deprecated
+        public void expectEmptyF(final String message, final Object... args) {}
+
+        /**
+         * @deprecated Always throws NPE.
+         */
+        @Override
+        @Deprecated
         public T orElseThrow() {
             throw new NullPointerException("No value in wrapper.");
         }
@@ -1533,11 +1727,11 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
         private final Supplier<T> defaultGetter;
         private volatile Result<T, E> result = null;
 
-        private Pending(ThrowingSupplier<T, E> getter) {
+        private Pending(final ThrowingSupplier<T, E> getter) {
             this(getter, null);
         }
 
-        private Pending(ThrowingSupplier<T, E> resultGetter, Supplier<T> defaultGetter) {
+        private Pending(final ThrowingSupplier<T, E> resultGetter, final Supplier<T> defaultGetter) {
             this.resultGetter = resultGetter;
             this.defaultGetter = defaultGetter;
         }
@@ -1554,7 +1748,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          * @return A concrete, evaluated {@link Result}.
          */
         @Override
-        public Result<T, E> ifErr(Consumer<E> f) {
+        public Result<T, E> ifErr(final Consumer<E> f) {
             return this.execute().ifErr(f);
         }
 
@@ -1565,7 +1759,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
 
         @Override
         @CheckReturnValue
-        public boolean isErr(Class<? super E> clazz) {
+        public boolean isErr(final Class<? super E> clazz) {
             return checkError(this.execute(), clazz);
         }
 
@@ -1576,22 +1770,22 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
 
         @Override
         @CheckReturnValue
-        public <U> U fold(Function<T, U> ifOk, Function<E, U> ifErr) {
+        public <U> U fold(final Function<T, U> ifOk, final Function<E, U> ifErr) {
             return this.execute().fold(ifOk, ifErr);
         }
 
         @Override
-        public T expect(String message) {
+        public T expect(final String message) {
             return this.execute().expect(message);
         }
 
         @Override
-        public Throwable expectErr(String message) {
+        public Throwable expectErr(final String message) {
             return this.execute().expectErr(message);
         }
 
         @Override
-        public Throwable expectErrF(String message, Object... args) {
+        public Throwable expectErrF(final String message, final Object... args) {
             return this.execute().expectErrF(message, args);
         }
 
@@ -1602,13 +1796,13 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
 
         @Override
         @CheckReturnValue
-        public T orElseGet(Function<E, T> f) {
+        public T orElseGet(final Function<E, T> f) {
             return this.execute().orElseGet(f);
         }
 
         @Override
         @CheckReturnValue
-        public PartialResult<T, E> orElseTry(ThrowingFunction<E, T, E> f) {
+        public PartialResult<T, E> orElseTry(final ThrowingFunction<E, T, E> f) {
             return this.execute().orElseTry(f);
         }
 
@@ -1629,7 +1823,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
             final T value;
             try {
                 value = this.resultGetter.get();
-            } catch (Throwable e) {
+            } catch (final Throwable e) {
                 return this.result = new Error<>(errorFound(e));
             }
 
@@ -1665,26 +1859,26 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
         private final ThrowingSupplier<T, E> resultGetter;
         private volatile OptionalResult<T, E> result = null;
 
-        private PendingNullable(ThrowingSupplier<T, E> resultGetter) {
+        private PendingNullable(final ThrowingSupplier<T, E> resultGetter) {
             this.resultGetter = resultGetter;
         }
 
         @Override
         @CheckReturnValue
-        public PartialResult<T, E> defaultIfEmpty(Supplier<T> defaultGetter) {
+        public PartialResult<T, E> defaultIfEmpty(final Supplier<T> defaultGetter) {
             return new Pending<>(this.resultGetter, defaultGetter);
         }
 
         @Override
         @CheckReturnValue
-        public PartialOptionalResult<T, E> ifEmpty(Runnable f) {
+        public PartialOptionalResult<T, E> ifEmpty(final Runnable f) {
             this.execute().ifEmpty(f);
             return this;
         }
 
         @Override
         @CheckReturnValue
-        public boolean isErr(Class<? super E> clazz) {
+        public boolean isErr(final Class<? super E> clazz) {
             return checkError(this.execute(), clazz);
         }
 
@@ -1706,17 +1900,22 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
         }
 
         @Override
-        public T expect(String message) {
+        public T expect(final String message) {
             return this.execute().expect(message);
         }
 
         @Override
-        public Throwable expectErr(String message) {
+        public void expectEmpty(final String message) {
+            this.execute().expectEmpty(message);
+        }
+
+        @Override
+        public Throwable expectErr(final String message) {
             return this.execute().expectErr(message);
         }
 
         @Override
-        public Throwable expectErrF(String message, Object... args) {
+        public Throwable expectErrF(final String message, final Object... args) {
             return this.execute().expectErrF(message, args);
         }
 
@@ -1736,7 +1935,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
             }
             try {
                 return this.result = Result.nullable(this.resultGetter.get());
-            } catch (Throwable e) {
+            } catch (final Throwable e) {
                 return this.result = new Error<>(errorFound(e));
             }
         }
@@ -1748,7 +1947,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
      * @throws WrongErrorException if the result contains an unexpected error.
      */
     @SuppressWarnings("rawtypes")
-    static <T, E extends Throwable> boolean checkError(BasicResult<T, E> result, Class<? super E> clazz) {
+    static <T, E extends Throwable> boolean checkError(final BasicResult<T, E> result, final Class<? super E> clazz) {
         if (result instanceof Error) {
             final Throwable error = ((Error) result).expose();
             if (!clazz.isInstance(error)) {
@@ -1761,16 +1960,16 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
 
     /** Attempts to cast the error into the appropriate subclass. */
     @SuppressWarnings("unchecked")
-    static <E extends Throwable> E errorFound(Throwable err) {
+    static <E extends Throwable> E errorFound(final Throwable err) {
         try {
             return (E) err;
-        } catch (ClassCastException e) {
+        } catch (final ClassCastException e) {
             throw wrongErrorFound(err);
         }
     }
 
     /** Forwards `err` and informs the user that the wrong kind of error was caught. */
-    static WrongErrorException wrongErrorFound(Throwable err) {
+    static WrongErrorException wrongErrorFound(final Throwable err) {
         return wrongErrorEx("Wrong type of error caught by wrapper.", err);
     }
 }

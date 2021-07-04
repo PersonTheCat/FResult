@@ -11,7 +11,7 @@ import java.util.function.Function;
 
 import static personthecat.fresult.Shorthand.f;
 
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "UnusedReturnValue"})
 public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E> {
 
     /**
@@ -110,7 +110,7 @@ public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E>
      * @return The underlying value.
      */
     default T unwrap() {
-        return expect("Attempted to unwrap a result with no value.");
+        return this.expect("Attempted to unwrap a result with no value.");
     }
 
     /**
@@ -121,7 +121,7 @@ public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E>
      */
     @CheckReturnValue
     default Throwable unwrapErr() {
-        return expectErr("Attempted to unwrap a result with no error.");
+        return this.expectErr("Attempted to unwrap a result with no error.");
     }
 
     /**
@@ -132,7 +132,7 @@ public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E>
      * <pre>
      *   // Runs an unsafe process, wrapping any original errors.
      *   Object result = getResult()
-     *     .expect("Unable to get value from result.");
+     *     .expect("Unable to get value from result");
      * </pre>
      *
      * @throws ResultUnwrapException Wraps the underlying error, if present.
@@ -150,7 +150,7 @@ public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E>
      * @return The underlying value
      */
     default T expectF(final String message, final Object... args) {
-        return expect(f(message, args));
+        return this.expect(f(message, args));
     }
 
     /**
@@ -174,7 +174,9 @@ public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E>
      * @param args A series of interpolated arguments (replacing <code>{}</code>).
      * @return The underlying error.
      */
-    Throwable expectErrF(final String message, final Object... args);
+    default Throwable expectErrF(final String message, final Object... args) {
+        return expectErr(f(message, args));
+    }
 
     /**
      * Variant of {@link #unwrap} which throws the original error, if applicable.

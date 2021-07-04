@@ -4,37 +4,18 @@ import personthecat.fresult.exception.MissingProcedureException;
 import personthecat.fresult.exception.ResultUnwrapException;
 import personthecat.fresult.exception.WrongErrorException;
 
-import java.util.Optional;
-
 /**
  * A collection of shorthand methods intended to improve the readability
  * of {@link Result}.java.;
  */
 class Shorthand {
+
     /**
      * Prints to the standard error print stream. Would ideally be
      * replaced with Log4j or some other logger.
      */
     static void warn(String x, Object... args) {
         System.err.println(f(x, args));
-    }
-
-    /**
-     * Shorthand for {@link Optional#of}, matching the original syntax of
-     * `empty`, while being more clear than `of` alone.
-     */
-    static <T> Optional<T> full(T val) {
-        return Optional.of(val);
-    }
-
-    /** Shorthand for {@link Optional#ofNullable}. */
-    static <T> Optional<T> nullable(T val) {
-        return Optional.ofNullable(val);
-    }
-
-    /** Shorthand for {@link Optional#empty}. */
-    static <T> Optional<T> empty() {
-        return Optional.empty();
     }
 
     /** Shorthand for {@link RuntimeException()}. */
@@ -72,7 +53,7 @@ class Shorthand {
         while (true) {
             si = s.indexOf("{}", si);
             if (si >= 0) {
-                sb.append(s.substring(begin, si));
+                sb.append(s, begin, si);
                 sb.append(args[oi++]);
                 begin = si = si + 2;
             } else {

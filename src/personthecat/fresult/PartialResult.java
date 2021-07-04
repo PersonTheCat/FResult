@@ -1,6 +1,5 @@
 package personthecat.fresult;
 
-import personthecat.fresult.exception.ResultUnwrapException;
 import personthecat.fresult.exception.WrongErrorException;
 import personthecat.fresult.interfaces.ThrowingFunction;
 
@@ -8,28 +7,16 @@ import javax.annotation.CheckReturnValue;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
-import static personthecat.fresult.Shorthand.f;
-
-@SuppressWarnings({"unused", "WeakerAccess", "UnusedReturnValue"})
-public abstract class PartialResult<T, E extends Throwable> {
+@SuppressWarnings("unused")
+public abstract class PartialResult<T, E extends Throwable> extends OptionalResult<T, E> {
 
     /**
-     * Returns whether an error occurred in the process.
-     *
-     * e.g.
-     * <pre><code>
-     *   Result<Void, RuntimeException> result = getResult();
-     *   // Compute the result and proceed only if it errs.
-     *   if (result.isErr()) {
-     *       ...
-     *   }
-     * </code></pre>
-     *
-     * @return true, if an error is present.
+     * This constructor indicates that {@link Result} is effectively a sealed class type.
+     * It may not be extended outside of this package.
      */
-    @CheckReturnValue
-    public abstract boolean isErr();
+    PartialResult() {}
 
     /**
      * Accepts an expression for what to do in the event of an error being present.
@@ -44,21 +31,15 @@ public abstract class PartialResult<T, E extends Throwable> {
     public abstract Result<T, E> ifErr(Consumer<E> f);
 
     /**
-     * Attempts to retrieve the underlying value, if present, while also accounting for
-     * any potential errors.
+     * Override providing a default behavior for all child types.
      *
-     * e.g.
-     * <pre><code>
-     *   Result.of(() -> getValueOrFail())
-     *     .get(e -> {...})
-     *     .ifPresent(t -> {...});
-     * </code></pre>
-     *
+     * @see OptionalResult#get
      * @return The underlying value, wrapped in {@link Optional}.
      */
+    @Override
     @CheckReturnValue
-    public Optional<T> get(Consumer<E> func) {
-        return this.ifErr(func).get();
+    public Optional<T> get(Consumer<E> f) {
+        return this.ifErr(f).get();
     }
 
     /**
@@ -71,97 +52,6 @@ public abstract class PartialResult<T, E extends Throwable> {
      */
     @CheckReturnValue
     public abstract <U> U fold(Function<T, U> ifOk, Function<E, U> ifErr);
-
-    /**
-     * Attempts to retrieve the underlying value, asserting that one must exist.
-     *
-     * @throws ResultUnwrapException Wraps the underlying error, if present.
-     * @return The underlying value.
-     */
-    public T unwrap() {
-        return expect("Attempted to unwrap a result with no value.");
-    }
-
-    /**
-     * Attempts to retrieve the underlying error, asserting that one must exist.
-     *
-     * @throws ResultUnwrapException If no error is present to be unwrapped.
-     * @return The underlying error.
-     */
-    @CheckReturnValue
-    public E unwrapErr() {
-        return expectErr("Attempted to unwrap a result with no error.");
-    }
-
-    /**
-     * Yields the underlying value, throwing a convenient, generic exception, if an
-     * error occurs.
-     *
-     * e.g.
-     * <pre><code>
-     *   // Runs an unsafe process, wrapping any original errors.
-     *   Object result = getResult()
-     *     .expect("Unable to get value from result.");
-     * </code></pre>
-     *
-     * @throws ResultUnwrapException Wraps the underlying error, if present.
-     * @param message The message to display in the event of an error.
-     * @return The underlying value.
-     */
-    public abstract T expect(String message);
-
-    /**
-     * Formatted variant of {@link #expect}.
-     *
-     * @throws ResultUnwrapException Wraps the underlying error, if present.
-     * @param message The message to display in the event of an error.
-     * @param args A series of interpolated arguments (replacing <code>{}</code>).
-     * @return The underlying value
-     */
-    public T expectF(String message, Object... args) {
-        return expect(f(message, args));
-    }
-
-    /**
-     * Yields the underlying error, throwing a generic exception if no error is present.
-     *
-     * @throws ResultUnwrapException If no error is present to be unwrapped.
-     * @param message The message to display in the event of an error.
-     * @return The underlying error.
-     */
-    @CheckReturnValue
-    public abstract E expectErr(String message);
-
-    /**
-     * Formatted variant of {@link #expectErr}.
-     *
-     * @throws ResultUnwrapException If no error is present to be unwrapped.
-     * @param message The message to display in the event of an error.
-     * @param args A series of interpolated arguments (replacing <code>{}</code>).
-     * @return The underlying error.
-     */
-    @CheckReturnValue
-    public E expectErrF(String message, Object... args) {
-        return expectErr(f(message, args));
-    }
-
-    /**
-     * Variant of {@link #unwrap} which throws the original error, if applicable.
-     *
-     * @throws E The original error, if present.
-     * @return The underlying value.
-     */
-    public T orElseThrow() throws E {
-        this.throwIfPresent();
-        return unwrap();
-    }
-
-    /**
-     * If an error is present, it will be thrown by this method.
-     *
-     * @throws E The original error, if present.
-     */
-    public abstract void throwIfPresent() throws E;
 
     /**
      * Variant of {@link Result#get()} which simultaneously handles a potential error
@@ -187,4 +77,24 @@ public abstract class PartialResult<T, E extends Throwable> {
      */
     @CheckReturnValue
     public abstract PartialResult<T, E> orElseTry(ThrowingFunction<E, T, E> f);
+
+    /**
+     * @see OptionalResult#defaultIfEmpty
+     * @deprecated PartialResult is never empty.
+     */
+    @Override
+    @Deprecated
+    public PartialResult<T, E> defaultIfEmpty(Supplier<T> defaultGetter) {
+        return this;
+    }
+
+    /**
+     * @see OptionalResult#ifEmpty
+     * @deprecated PartialResult is never empty.
+     */
+    @Override
+    @Deprecated
+    public PartialResult<T, E> ifEmpty(Runnable f) {
+        return this;
+    }
 }

@@ -4,6 +4,8 @@ import personthecat.fresult.interfaces.ThrowingConsumer;
 import personthecat.fresult.interfaces.ThrowingFunction;
 import personthecat.fresult.interfaces.ThrowingSupplier;
 
+import java.util.Optional;
+
 /**
  * A helper classed used for generating Results with a single closeable resource.
  * Equivalent to using try-with-resources.
@@ -11,7 +13,7 @@ import personthecat.fresult.interfaces.ThrowingSupplier;
  * @param <R> The resource being consumed and closed by this handler.
  * @param <E> The type of error to be caught by the handler.
  */
-@SuppressWarnings({"unused", "WeakerAccess", "UnusedReturnValue"})
+@SuppressWarnings("unused")
 public class WithResource<R extends AutoCloseable, E extends Throwable> {
 
     private final ThrowingSupplier<R, E> rGetter;
@@ -28,16 +30,12 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
      *
      * @param attempt A function which consumes the resource and either returns a
      *                value or throws an exception.
-     * @return The result of the operation.
+     * @param <T> The type of value being returned by the wrapper.
+     * @param <E2> The type of exception thrown by the resource getter.
+     * @return A result which may either be a value or an error.
      */
     public <T, E2 extends E> Result.Pending<T, E> of(ThrowingFunction<R, T, E2> attempt) {
-        return Result.of(() -> {
-            try (R r = this.rGetter.get()) {
-                return attempt.apply(r);
-            } catch (Throwable e) {
-                throw Result.<E>errorFound(e);
-            }
-        });
+        return Result.of(() -> this.execute(attempt));
     }
 
     /**
@@ -45,13 +43,68 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
      *
      * @param attempt A function which consumes the resource and may throw an
      *                exception.
-     * @return The result of the operation.
+     * @param <E2> The type of exception thrown by the resource getter.
+     * @return A result which may either be OK or an error.
      */
     public <E2 extends E> Result.Pending<Void, E> of(ThrowingConsumer<R, E2> attempt) {
-        return this.of(r -> {
-            attempt.accept(r);
-            return Void.INSTANCE;
-        });
+        return this.of(Result.wrapVoid(attempt));
+    }
+
+    /**
+     * Variant of {@link #of(ThrowingFunction)} which implies that the type of
+     * exception being thrown is not significant. For this reason, we ignore
+     * the safeguards via type coercion and immediately return a {@link Result}.
+     *
+     * @param attempt A function which consumes the resource and either returns a
+     *                value or throws <b>any</b> type of exception.
+     * @param <T> The type of value being returned by the wrapper.
+     * @param <E2> The type of exception thrown by the resource getter.
+     * @return A result which may either be a value or <b>any</b> error.
+     */
+    public <T, E2 extends E> Result<T, Throwable> any(ThrowingFunction<R, T, E2> attempt) {
+        return Result.any(() -> this.execute(attempt));
+    }
+
+    /**
+     * Variant of {@link #of(ThrowingConsumer)} which implies that the type
+     * of exception being thrown is not significant.
+     *
+     * @see WithResource#any(ThrowingFunction)
+     * @param attempt A function which consumes the resource any either returns a
+     *                value or throws <b>any</b> type of exception.
+     * @param <E2> The type of exception thrown by the resource getter.
+     * @return A result which may either be a value or <b>any</b> error.
+     */
+    public <E2 extends E> Result<Void, Throwable> any(ThrowingConsumer<R, E2> attempt) {
+        return this.any(Result.wrapVoid(attempt));
+    }
+
+    /**
+     * Variant of {@link WithResource#of} which is allowed to return a null value.
+     *
+     * @param attempt A function which consumes the resource and either returns a
+     *                value, throws an exception, or returns null.
+     * @param <T> The type of value being returned by the wrapper.
+     * @param <E2> The type of exception thrown by the resource getter.
+     * @return A result which may either be a value, error, or null.
+     */
+    public <T, E2 extends E> Result.PendingNullable<T, E> nullable(ThrowingFunction<R, T, E2> attempt) {
+        return Result.nullable(() -> execute(attempt));
+    }
+
+    /**
+     * Variant of {@link WithResource#nullable) which wraps the given value in Optional
+     * instead of returning an {@link OptionalResult}. This may be useful in some
+     * cases where it is syntactically shorter to handle null values via {@link Optional}.
+     *
+     * @param attempt A function which consumes the resource and either returns a
+     *                value, throws an exception, or returns null.
+     * @param <T> The type of value being returned by the wrapper.
+     * @param <E2> The type of exception thrown by the resource getter.
+     * @return A result which may either be an optional value or an error.
+     */
+    public <T, E2 extends E> Result.Pending<Optional<T>, E> wrappingOptional(ThrowingFunction<R, T, E2> attempt) {
+        return Result.wrappingOptional(() -> execute(attempt));
     }
 
     /**
@@ -98,5 +151,22 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
      */
     public <R2 extends AutoCloseable> WithResources<R, R2, E> with(ThrowingFunction<R, R2, E> getter) {
         return this.and(getter);
+    }
+
+    /**
+     * Executes the underlying procedure being wrapped by this utility.
+     *
+     * @throws E If an error occurs.
+     * @param attempt The procedure to attempt running which consumes the resource.
+     * @param <T> The type of value being returned by the wrapper.
+     * @param <E2> The type of exception thrown by the resource getter.
+     * @return The value expected by the wrapper.
+     */
+    private <T, E2 extends E> T execute(ThrowingFunction<R, T, E2> attempt) throws E {
+        try (R r = this.rGetter.get()) {
+            return attempt.apply(r);
+        } catch (Throwable e) {
+            throw Result.<E>errorFound(e);
+        }
     }
 }

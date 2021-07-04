@@ -5,7 +5,8 @@ import personthecat.fresult.exception.WrongErrorException;
 
 import java.io.IOException;
 
-import static personthecat.fresult.Shorthand.*;
+import static personthecat.fresult.Shorthand.f;
+import static personthecat.fresult.Shorthand.runEx;
 
 public class Test {
 
@@ -41,7 +42,7 @@ public class Test {
     private static void testInvalidProtocol() {
         try {
             final Protocol empty = new Protocol();
-            empty.get(Test::throwsISE);
+            empty.run(Test::throwsISE);
         } catch (MissingProcedureException e) {
             info("Missing procedure detected successfully.");
             return;
@@ -52,7 +53,7 @@ public class Test {
     private static void testValidProtocol() {
         Result.define(IOException.class, e -> { throw runEx("Wrong procedure implemented."); })
             .define(IllegalAccessException.class, e -> info("Protocol implemented successfully."))
-            .get(Test::throwsISE);
+            .run(Test::throwsISE);
     }
 
     private static void testClose() {
@@ -81,7 +82,7 @@ public class Test {
         throw new IOException("Error not caught by handler.");
     }
 
-    private static Object throwsISE() throws IllegalAccessException {
+    private static void throwsISE() throws IllegalAccessException {
         throw new IllegalAccessException("Error not caught by handler.");
     }
 

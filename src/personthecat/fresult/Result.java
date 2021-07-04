@@ -114,6 +114,13 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
     public static <E extends Throwable> void THROW(E e) { throw runEx(e); }
 
     /**
+     * A runnable method for cases in which an {@link OptionalResult} is empty.
+     * <p>e.g.</p>
+     * {@code Result.nullable(...).ifEmpty(Result::WARN_NULL);}
+     */
+    public static void WARN_NULL() { warn("Null value in wrapper"); }
+
+    /**
      * This constructor indicates that {@link Result} is effectively a sealed class type.
      * It may not be extended outside of this package.
      */
@@ -259,7 +266,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
         }
     }
 
-    /** Todo: re document
+    /**
      * Constructs a new result from a known value which may or may not be null.
      *
      * <p>e.g.</p>
@@ -268,8 +275,8 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      *   // Call Optional#orElse or Optional#orElseGet to substitute
      *   // the value, if null.
      *   final Object result = Result.nullable(potentiallyNullValue)
-     *     .orElseGet(() -> Optional.of(nonNullValue)) // Alternate value if err
-     *     .orElseGet(Object::new); // Alternate value if null
+     *     .defaultIfNull(Object::new); // Alternate value if null
+     *     .orElseGet(e -> Optional.of(nonNullValue)) // Alternate value if err
      * </pre>
      *
      * @param value Any given value which may be null
@@ -282,7 +289,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
         return value == null ? Result.empty() : Result.ok(value);
     }
 
-    /** Todo: re document
+    /**
      * Constructs a new result from an operation which may neither err or return a value.
      *
      * <p>e.g.</p>
@@ -291,8 +298,8 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      *   // an exception or simply return null. Call Optional#orElse
      *   // or Optional#orElseGet to substitute the value, if null.
      *   final Object result = Result.nullable(ClassName::thisMayReturnNullOrFail)
-     *     .expect("Error message!") // Potentially null value wrapped in Optional<T>.
-     *     .orElseGet(Object::new);
+     *     .defaultIfNull(Object::new);
+     *     .expect("Error message!")
      * </pre>
      *
      * @see Result#nullable(T)

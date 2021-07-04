@@ -167,7 +167,7 @@ class WithResources<R1 extends AutoCloseable, R2 extends AutoCloseable, E extend
 
     /**
      * Variant of {@link WithResources#nullable(ThrowingBiFunction)} which wraps the given
-     * value in Optional instead of returning an {@link OptionalResult}. This may be useful
+     * value in Optional instead of returning an {@link PartialOptionalResult}. This may be useful
      * in some cases where it is syntactically shorter to handle null values via {@link Optional}.
      *
      * @param attempt A function which consumes both resources and either returns a value,
@@ -182,7 +182,7 @@ class WithResources<R1 extends AutoCloseable, R2 extends AutoCloseable, E extend
 
     /**
      * Variant of {@link WithResources#wrappingOptional(ThrowingBiFunction)} which wraps
-     * the given value in Optional instead of returning an {@link OptionalResult}.
+     * the given value in Optional instead of returning an {@link PartialOptionalResult}.
      *
      * @see WithResources#wrappingOptional(ThrowingBiFunction)
      * @param attempt A function which consumes the first resource and either returns a

@@ -6,67 +6,13 @@ import personthecat.fresult.exception.WrongErrorException;
 import javax.annotation.CheckReturnValue;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static personthecat.fresult.Shorthand.f;
 
-/**
- * The parent type of all possible {@link Result} values.
- *
- * <p>
- *   The <code>OptionalResult</code> type represents the least amount of certainty possible
- *   for any given outcome. It implies that a procedure has terminated in one of three
- *   potential states:
- * </p>
- * <ul>
- *   <li>A value,</li>
- *   <li>An error, or</li>
- *   <li><code>null</code>.</li>
- * </ul>
- * <p>
- *   As a result, this type provides the smallest set of functional utilities for interacting
- *   with the data. To achieve a higher level of certainty about the state of this wrapper,
- *   you can begin by stripping away the layers uncertainty, starting in most cases with
- *   nullability.
- *
- *   In general, nullability is the first layer to be stripped away. This can be accomplished
- *   by supplying a default value via {@link OptionalResult#defaultIfEmpty}, which in turn
- *   yields a {@link PartialResult}.
- * </p>
- * <pre>
- *   final PartialResult<String, RuntimeException> result = Result.nullable(() -> null)
- *     .defaultIfEmpty(() -> "Hello, World!");
- * </pre>
- * <p>
- *   Alternatively, you may wish to handle this scenario by some other means. This can be
- *   accomplished by calling {@link OptionalResult#ifEmpty}.
- * </p>
- * <pre>
- *   final OptionalResult<String, RuntimeException> result = Result.nullable(() -> null)
- *     .ifEmpty(() -> {...});
- * </pre>
- * <p>
- *   Finally, FResult also provides utilities for terminating early if an error or null is
- *   present ({@link #expect}, {@link #unwrap}, etc.). Let's take a look at the quickest way
- *   to stop early if anything goes wrong:
- * </p>
- * <pre>
- *   final String result = Result.<String, RuntimeException>nullable(() -> null)
- *     .expect("Error message!");
- * </pre>
- *
- * @see PartialResult
- * @param <T> The type of data being consumed by the wrapper.
- * @param <E> The type of error being consumed by the wrapper.
- */
-@SuppressWarnings("unused")
-public abstract class OptionalResult<T, E extends Throwable> {
-
-    /**
-     * This constructor indicates that {@link Result} is effectively a sealed class type.
-     * It may not be extended outside of this package.
-     */
-    OptionalResult() {}
+@SuppressWarnings({"unused", "UnusedReturnValue"})
+public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E> {
 
     /**
      * Consumes instructions for what to do if a given result contains no value. This
@@ -77,7 +23,24 @@ public abstract class OptionalResult<T, E extends Throwable> {
      * @param defaultGetter Supplies a default value if the wrapper does not contain one.
      * @return An upgraded {@link PartialResult} for handling unknown error types.
      */
-    public abstract PartialResult<T, E> defaultIfEmpty(Supplier<T> defaultGetter);
+    Result<T, E> defaultIfEmpty(final Supplier<T> defaultGetter);
+
+    /**
+     * Returns whether no value was returned in the process.
+     *
+     * e.g.
+     * <pre>
+     *   final OptionalResult<Object, RuntimeException> result = getOptionalResult();
+     *   // Compute the result and proceed only if it returns null.
+     *   if (result.isEmpty()) {
+     *       ...
+     *   }
+     * </pre>
+     *
+     * @return true, if no value is present.
+     */
+    @CheckReturnValue
+    boolean isEmpty();
 
     /**
      * Consumes a procedure to be executed if no value is present in the wrapper.
@@ -85,45 +48,118 @@ public abstract class OptionalResult<T, E extends Throwable> {
      * @param f A function to run if this wrapper contains no value.
      * @return This, or else an upgraded {@link PartialResult}.
      */
-    public abstract OptionalResult<T, E> ifEmpty(Runnable f);
+    OptionalResult<T, E> ifEmpty(final Runnable f);
 
     /**
-     * Variant of {@link Result#isErr} which can safely guarantee whether the
-     * expected type of error is present in the wrapper. If no error is present, this
-     * function yields <code>false</code>. If the expected error is present, this function
-     * yields <code>true</code>. If an unexpected error is found, <b>it will be thrown</b>.
+     * Returns whether the expected type of error occurred in the process.
      *
-     * @throws WrongErrorException If any other type of exception is found.
-     * @param clazz The type of error expected by the wrapper.
-     * @return Whether an expected type of exception is found.
+     * e.g.
+     * <pre>
+     *   final Result<Void, RuntimeException> result = getResult();
+     *   // Compute the result and proceed only if it errs.
+     *   if (result.isErr()) {
+     *       ...
+     *   }
+     * </pre>
+     *
+     * @return true, if an error is present.
      */
     @CheckReturnValue
-    public abstract boolean isErr(Class<? super E> clazz);
+    boolean isErr();
 
     /**
-     * Variant of {@link Result#isErr} which provides a semantic contract that the
-     * type of error being handled is not significant.
+     * Accepts an expression for what to do in the event of an error being present.
+     * <p>
+     *   Use this whenever you want to functionally handle both code paths (i.e. error
+     *   vs. value).
+     * </p>
+     * @throws WrongErrorException If the underlying error is an unexpected type.
+     * @param f A function consuming the error, if present.
+     * @return This, or else a complete {@link Result}.
+     */
+    OptionalResult<T, E> ifErr(final Consumer<E> f);
+
+    /**
+     * Returns whether a value was yielded or no error occurred.
      *
-     * @return Whether <em>any</em> error is found in the wrapper.
+     * <p>e.g.</p>
+     * <pre>
+     *   final Result<Void, RuntimeException> result = getResult();
+     *   // Compute the result and proceed only if it does not err.
+     *   if (result.isOk()) {
+     *       ...
+     *   }
+     * <pre>
+     *
+     * @return true, if a value is present.
      */
     @CheckReturnValue
-    public abstract boolean isAnyErr();
+    boolean isOk();
+
+    /**
+     * Accepts an expression for what to do in the event of no error
+     * being present. Use this whenever you want to functionally handle
+     * both code paths (i.e. error vs. value).
+     *
+     * @param f A function consuming the value, if present.
+     * @return This, or else a complete {@link Result}.
+     */
+    @CheckReturnValue
+    OptionalResult<T, E> ifOk(Consumer<T> f);
 
     /**
      * Attempts to retrieve the underlying value, if present, while also accounting for
      * any potential errors.
      *
      * e.g.
-     * <pre><code>
+     * <pre>
      *   Result.of(() -> getValueOrFail())
      *     .get(e -> {...})
      *     .ifPresent(t -> {...});
-     * </code></pre>
+     * </pre>
      *
      * @return The underlying value, wrapped in {@link Optional}.
      */
     @CheckReturnValue
-    public abstract Optional<T> get(Consumer<E> func);
+    Optional<T> get(final Consumer<E> func);
+
+    /**
+     * Effectively casts this object into a standard Optional instance.
+     * Prefer calling {@link OptionalResult#get(Consumer)}, as this removes the need for
+     * any implicit error checking.
+     *
+     * @return The underlying value, wrapped in {@link Optional}.
+     */
+    @CheckReturnValue
+    Optional<T> get();
+
+    /**
+     * Retrieves the underlying error, wrapped in Optional.
+     *
+     * @return The underlying error, wrapped in {@link Optional}.
+     */
+    @CheckReturnValue
+    Optional<E> getErr();
+
+    /**
+     * Yields the underlying value or else the input. This is equivalent to
+     * running `getResult().get(e -> {...}).orElse();`
+     *
+     * @return The underlying value, or else the input.
+     */
+    @CheckReturnValue
+    T orElse(T val);
+
+    /**
+     * Variant of {@link PartialResult#orElseGet(Function)} which does not specifically
+     * consume the error.
+     *
+     * @param f A function which supplies a new value if none is present in the
+     *             wrapper.
+     * @return The underlying value, or else func.get().
+     */
+    @CheckReturnValue
+    T orElseGet(Supplier<T> f);
 
     /**
      * Attempts to retrieve the underlying value, asserting that one must exist.
@@ -131,8 +167,19 @@ public abstract class OptionalResult<T, E extends Throwable> {
      * @throws ResultUnwrapException Wraps the underlying error, if present.
      * @return The underlying value.
      */
-    public T unwrap() {
+    default T unwrap() {
         return expect("Attempted to unwrap a result with no value.");
+    }
+
+    /**
+     * Attempts to retrieve the underlying error, asserting that one must exist.
+     *
+     * @throws ResultUnwrapException If no error is present to be unwrapped.
+     * @return The underlying error.
+     */
+    @CheckReturnValue
+    default E unwrapErr() {
+        return expectErr("Attempted to unwrap a result with no error.");
     }
 
     /**
@@ -140,17 +187,17 @@ public abstract class OptionalResult<T, E extends Throwable> {
      * error occurs.
      *
      * e.g.
-     * <pre><code>
+     * <pre>
      *   // Runs an unsafe process, wrapping any original errors.
      *   Object result = getResult()
      *     .expect("Unable to get value from result.");
-     * </code></pre>
+     * </pre>
      *
      * @throws ResultUnwrapException Wraps the underlying error, if present.
      * @param message The message to display in the event of an error.
      * @return The underlying value.
      */
-    public abstract T expect(String message);
+    T expect(final String message);
 
     /**
      * Formatted variant of {@link #expect}.
@@ -160,7 +207,7 @@ public abstract class OptionalResult<T, E extends Throwable> {
      * @param args A series of interpolated arguments (replacing <code>{}</code>).
      * @return The underlying value
      */
-    public T expectF(String message, Object... args) {
+    default T expectF(final String message, final Object... args) {
         return expect(f(message, args));
     }
 
@@ -176,16 +223,18 @@ public abstract class OptionalResult<T, E extends Throwable> {
      * @param message The message to display in the event of an error.
      * @return The underlying error.
      */
-    public abstract Throwable expectAnyErr(String message);
+    E expectErr(final String message);
 
     /**
-     * @see OptionalResult#expectAnyErr(String).
+     * @see PartialOptionalResult#expectErr(String).
      * @throws ResultUnwrapException If no error is present to be unwrapped.
      * @param message The message to display in the event of an error.
      * @param args A series of interpolated arguments (replacing <code>{}</code>).
      * @return The underlying error.
      */
-    public abstract Throwable expectAnyErrF(String message, Object... args);
+    default E expectErrF(final String message, final Object... args) {
+        return this.expectErr(f(message, args));
+    }
 
     /**
      * Variant of {@link #unwrap} which throws the original error, if applicable.
@@ -193,9 +242,9 @@ public abstract class OptionalResult<T, E extends Throwable> {
      * @throws E The original error, if present.
      * @return The underlying value.
      */
-    public T orElseThrow() throws E {
+    default T orElseThrow() throws E {
         this.throwIfErr();
-        return unwrap();
+        return this.unwrap();
     }
 
     /**
@@ -203,5 +252,5 @@ public abstract class OptionalResult<T, E extends Throwable> {
      *
      * @throws E The original error, if present.
      */
-    public abstract void throwIfErr() throws E;
+    void throwIfErr() throws E;
 }

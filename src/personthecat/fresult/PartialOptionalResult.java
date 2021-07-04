@@ -2,17 +2,84 @@ package personthecat.fresult;
 
 import personthecat.fresult.exception.ResultUnwrapException;
 import personthecat.fresult.exception.WrongErrorException;
-import personthecat.fresult.interfaces.ThrowingFunction;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static personthecat.fresult.Shorthand.f;
 
+/**
+ * The parent type of all possible {@link Result} values.
+ *
+ * <p>
+ *   The <code>OptionalResult</code> type represents the least amount of certainty possible
+ *   for any given outcome. It implies that a procedure has terminated in one of three
+ *   potential states:
+ * </p>
+ * <ul>
+ *   <li>A value,</li>
+ *   <li>An error, or</li>
+ *   <li><code>null</code>.</li>
+ * </ul>
+ * <p>
+ *   As a result, this type provides the smallest set of functional utilities for interacting
+ *   with the data. To achieve a higher level of certainty about the state of this wrapper,
+ *   you can begin by stripping away the layers uncertainty, starting in most cases with
+ *   nullability.
+ *
+ *   In general, nullability is the first layer to be stripped away. This can be accomplished
+ *   by supplying a default value via {@link PartialOptionalResult#defaultIfEmpty}, which in turn
+ *   yields a {@link PartialResult}.
+ * </p>
+ * <pre>
+ *   final PartialResult<String, RuntimeException> result = Result.nullable(() -> null)
+ *     .defaultIfEmpty(() -> "Hello, World!");
+ * </pre>
+ * <p>
+ *   Alternatively, you may wish to handle this scenario by some other means. This can be
+ *   accomplished by calling {@link PartialOptionalResult#ifEmpty}.
+ * </p>
+ * <pre>
+ *   final OptionalResult<String, RuntimeException> result = Result.nullable(() -> null)
+ *     .ifEmpty(() -> {...});
+ * </pre>
+ * <p>
+ *   Finally, FResult also provides utilities for terminating early if an error or null is
+ *   present ({@link #expect}, {@link #unwrap}, etc.). Let's take a look at the quickest way
+ *   to stop early if anything goes wrong:
+ * </p>
+ * <pre>
+ *   final String result = Result.<String, RuntimeException>nullable(() -> null)
+ *     .expect("Error message!");
+ * </pre>
+ *
+ * @see PartialResult
+ * @param <T> The type of data being consumed by the wrapper.
+ * @param <E> The type of error being consumed by the wrapper.
+ */
 @SuppressWarnings("unused")
-public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E> {
+public interface PartialOptionalResult<T, E extends Throwable> extends BasicResult<T, E> {
+
+    /**
+     * Consumes instructions for what to do if a given result contains no value. This
+     * method eliminates any uncertainty surrounding whether null values can exist within
+     * the wrapper. As a result, its type will be upgraded to a more permissive
+     * {@link PartialResult}.
+     *
+     * @param defaultGetter Supplies a default value if the wrapper does not contain one.
+     * @return An upgraded {@link PartialResult} for handling unknown error types.
+     */
+    PartialResult<T, E> defaultIfEmpty(final Supplier<T> defaultGetter);
+
+    /**
+     * Consumes a procedure to be executed if no value is present in the wrapper.
+     *
+     * @param f A function to run if this wrapper contains no value.
+     * @return This, or else an upgraded {@link PartialResult}.
+     */
+    PartialOptionalResult<T, E> ifEmpty(final Runnable f);
 
     /**
      * Variant of {@link Result#isErr} which can safely guarantee whether the
@@ -37,27 +104,20 @@ public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E>
     boolean isAnyErr();
 
     /**
-     * Accepts an expression for what to do in the event of an error being present.
-     * <p>
-     *   Use this whenever you want to functionally handle both code paths (i.e. error
-     *   vs. value).
-     * </p>
-     * @throws WrongErrorException If the underlying error is an unexpected type.
-     * @param f A function consuming the error, if present.
-     * @return This, or else a complete {@link Result}.
-     */
-    Result<T, E> ifErr(final Consumer<E> f);
-
-    /**
-     * Override providing a default behavior for all child types.
+     * Attempts to retrieve the underlying value, if present, while also accounting for
+     * any potential errors.
      *
-     * @see PartialOptionalResult#get
+     * e.g.
+     * <pre>
+     *   Result.of(() -> getValueOrFail())
+     *     .get(e -> {...})
+     *     .ifPresent(t -> {...});
+     * </pre>
+     *
      * @return The underlying value, wrapped in {@link Optional}.
      */
     @CheckReturnValue
-    default Optional<T> get(final Consumer<E> f) {
-        return this.ifErr(f).get();
-    }
+    Optional<T> get(final Consumer<E> func);
 
     /**
      * Retrieves the underlying error, wrapped in Optional.
@@ -68,42 +128,6 @@ public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E>
     Optional<Throwable> getAnyErr();
 
     /**
-     * Converts this wrapper into a new type when accounting for both potential outcomes.
-     *
-     * @param ifOk The transformer applied if a value is present in the wrapper.
-     * @param ifErr The transformer applied if an error is present in the wrapper.
-     * @param <U> The type of value being output by this method.
-     * @return The output of either <code>ifOk</code> or <code>ifErr</code>.
-     */
-    @CheckReturnValue
-    <U> U fold(final Function<T, U> ifOk, final Function<E, U> ifErr);
-
-    /**
-     * Variant of {@link Result#get()} which simultaneously handles a potential error
-     * and yields a substitute value. Equivalent to following a {@link Result#get()}
-     * call with a call to {@link Optional#orElseGet}.
-     *
-     * @throws RuntimeException wrapping the original error, if an unexpected type
-     *                          of error is present in the wrapper.
-     * @param f A function which returns an alternate value given the error, if
-     *             present.
-     * @return The underlying value, or else func.apply(E).
-     */
-    @CheckReturnValue
-    T orElseGet(final Function<E, T> f);
-
-    /**
-     * Maps to a new Result if an error is present. Use this whenever
-     * your first and second attempt at retrieving a value may fail.
-     *
-     * @param f A new function to attempt in the presence of an error.
-     * @return The pending result of the new function, if an error is present,
-     *         or else a complete {@link Result}.
-     */
-    @CheckReturnValue
-    PartialResult<T, E> orElseTry(final ThrowingFunction<E, T, E> f);
-
-    /**
      * Attempts to retrieve the underlying value, asserting that one must exist.
      *
      * @throws ResultUnwrapException Wraps the underlying error, if present.
@@ -111,17 +135,6 @@ public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E>
      */
     default T unwrap() {
         return expect("Attempted to unwrap a result with no value.");
-    }
-
-    /**
-     * Attempts to retrieve the underlying error, asserting that one must exist.
-     *
-     * @throws ResultUnwrapException If no error is present to be unwrapped.
-     * @return The underlying error.
-     */
-    @CheckReturnValue
-    default Throwable unwrapErr() {
-        return expectErr("Attempted to unwrap a result with no error.");
     }
 
     /**

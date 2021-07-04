@@ -36,7 +36,7 @@ import static personthecat.fresult.Shorthand.wrongErrorEx;
  *   Basic implementations for each of the above use-cases are as follows:
  * </p><pre>
  *   // Return the product of each block.
- *   public static Result<String, IOException> betterReturn() {
+ *   static Result<String, IOException> betterReturn() {
  *     final File f = getFile();
  *     try {
  *       return Result.ok(getContents(f));
@@ -46,13 +46,13 @@ import static personthecat.fresult.Shorthand.wrongErrorEx;
  *   }
  *
  *   // Standard conventions to be wrapped.
- *   public static String toWrap() throws IOException {
+ *   static String toWrap() throws IOException {
  *     final File f = getFile();
  *     return getContents(f);
  *   }
  *
  *   // Create and return a new error directly.
- *   public static Result<String, IOException> betterReturnAlt() {
+ *   static Result<String, IOException> betterReturnAlt() {
  *     final File f = getFile();
  *     return testConditions()
  *       ? Result.ok(getContents(f))
@@ -88,7 +88,7 @@ import static personthecat.fresult.Shorthand.wrongErrorEx;
  * @author PersonTheCat
  */
 @SuppressWarnings("unused")
-public abstract class Result<T, E extends Throwable> extends PartialResult<T, E> {
+public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
 
     /**
      * Accepts an error and ignores it, while still coercing it to its lowest type, thus
@@ -97,34 +97,28 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * <p>e.g.</p>
      * {@code Result.of(...).ifErr(Result::IGNORE);}
      */
-    public static <E extends Throwable> void IGNORE(E e) {}
+    static <E extends Throwable> void IGNORE(final E e) {}
 
     /**
      * Accepts an error and logs it as a warning. This implementation is also type safe.
      * <p>e.g.</p>
      * {@code Result.of(...).ifErr(Result::WARN);}
      */
-    public static <E extends Throwable> void WARN(E e) { warn("{}", e); }
+    static <E extends Throwable> void WARN(final E e) { warn("{}", e); }
 
     /**
      * Accepts an error and throws it. This implementation is also type safe.
      * <p>e.g.</p>
      * {@code Result.of(...).ifErr(Result::THROW);}
      */
-    public static <E extends Throwable> void THROW(E e) { throw runEx(e); }
+    static <E extends Throwable> void THROW(final E e) { throw runEx(e); }
 
     /**
-     * A runnable method for cases in which an {@link OptionalResult} is empty.
+     * A runnable method for cases in which an {@link PartialOptionalResult} is empty.
      * <p>e.g.</p>
      * {@code Result.nullable(...).ifEmpty(Result::WARN_NULL);}
      */
-    public static void WARN_NULL() { warn("Null value in wrapper"); }
-
-    /**
-     * This constructor indicates that {@link Result} is effectively a sealed class type.
-     * It may not be extended outside of this package.
-     */
-    Result() {}
+    static void WARN_NULL() { warn("Null value in wrapper"); }
 
     /**
      * Returns a generic result containing no value or error. Use this method whenever
@@ -135,8 +129,8 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      */
     @CheckReturnValue
     @SuppressWarnings("unchecked")
-    public static <E extends Throwable> Result<Void, E> ok() {
-        return (Result<Void, E>) Value.OK;
+    static <E extends Throwable> Value<Void, E> ok() {
+        return (Value<Void, E>) Value.OK;
     }
 
     /**
@@ -149,7 +143,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @return A result which is always OK.
      */
     @CheckReturnValue
-    public static <T, E extends Throwable> Result<T, E> ok(T val) {
+    static <T, E extends Throwable> Value<T, E> ok(final T val) {
         return new Value<>(val);
     }
 
@@ -163,7 +157,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @return A result which is always an error.
      */
     @CheckReturnValue
-    public static <T, E extends Throwable> Result<T, E> err(E e) {
+    static <T, E extends Throwable> Error<T, E> err(final E e) {
         return new Error<>(e);
     }
 
@@ -178,8 +172,8 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      */
     @CheckReturnValue
     @SuppressWarnings("unchecked")
-    public static <T, E extends Throwable> OptionalResult<T, E> empty() {
-        return (Result.Empty<T, E>) Empty.INSTANCE;
+    static <T, E extends Throwable> OptionalResult<T, E> empty() {
+        return (Empty<T, E>) Empty.INSTANCE;
     }
 
     /**
@@ -201,7 +195,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @return A result which may either be a value or an error.
      */
     @CheckReturnValue
-    public static <T, E extends Throwable> Pending<T, E> of(ThrowingSupplier<T, E> attempt) {
+    static <T, E extends Throwable> Pending<T, E> of(final ThrowingSupplier<T, E> attempt) {
         return new Pending<>(attempt);
     }
 
@@ -221,7 +215,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @return A result which may either be OK or an error.
      */
     @CheckReturnValue
-    public static <E extends Throwable> Pending<Void, E> of(ThrowingRunnable<E> attempt) {
+    static <E extends Throwable> Pending<Void, E> of(final ThrowingRunnable<E> attempt) {
         return new Pending<>(wrapVoid(attempt));
     }
 
@@ -240,11 +234,11 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @return A result which may either a value or any kind of exception.
      */
     @CheckReturnValue
-    public static <T> Result<T, Throwable> any(ThrowingSupplier<T, Throwable> attempt) {
+    static <T> Result<T, Throwable> any(final ThrowingSupplier<T, Throwable> attempt) {
         try {
-            return new Value<>(attempt.get());
+            return ok(attempt.get());
         } catch (Throwable t) {
-            return new Error<>(t);
+            return err(t);
         }
     }
 
@@ -257,12 +251,12 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @return A result which may either be OK or any kind of exception.
      */
     @CheckReturnValue
-    public static Result<Void, Throwable> any(ThrowingRunnable<Throwable> attempt) {
+    static Result<Void, Throwable> any(final ThrowingRunnable<Throwable> attempt) {
         try {
             attempt.run();
             return ok();
         } catch (Throwable t) {
-            return new Error<>(t);
+            return err(t);
         }
     }
 
@@ -285,7 +279,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @return A result which may either be a value, an error, or null.
      */
     @CheckReturnValue
-    public static <T, E extends Throwable> OptionalResult<T, E> nullable(T value) {
+    static <T, E extends Throwable> OptionalResult<T, E> nullable(final T value) {
         return value == null ? Result.empty() : Result.ok(value);
     }
 
@@ -309,13 +303,13 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @return A result which may either be a value, an error, or null.
      */
     @CheckReturnValue
-    public static <T, E extends Throwable> PendingNullable<T, E> nullable(ThrowingSupplier<T, E> attempt) {
+    static <T, E extends Throwable> PendingNullable<T, E> nullable(final ThrowingSupplier<T, E> attempt) {
         return new PendingNullable<>(attempt);
     }
 
     /**
      * Variant of {@link Result#nullable} which wraps the given value in Optional
-     * instead of returning an {@link OptionalResult}. This may be useful in some
+     * instead of returning an {@link PartialOptionalResult}. This may be useful in some
      * cases where it is syntactically shorter to handle null values via {@link Optional}.
      *
      * @param value The value being consumed by the wrapper.
@@ -323,13 +317,13 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @param <E> The type of error being consumed by the wrapper.
      * @return A result which may either be an optional value or an error.
      */
-    public static <T, E extends Throwable> Result<Optional<T>, E> wrappingOptional(T value) {
+    static <T, E extends Throwable> Result<Optional<T>, E> wrappingOptional(final T value) {
         return new Value<>(Optional.ofNullable(value));
     }
 
     /**
      * Variant of {@link Result#nullable} which wraps the output in Optional instead of
-     * returning an instance of {@link OptionalResult}. This may be useful in some cases
+     * returning an instance of {@link PartialOptionalResult}. This may be useful in some cases
      * where it is syntactically shorter to handle null values via {@link Optional}.
      *
      * <p>e.g.</p>
@@ -345,7 +339,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @param <E> The type of error being consumed by the wrapper.
      * @return A result which may either be an optional value or an error.
      */
-    public static <T, E extends Throwable> Pending<Optional<T>, E> wrappingOptional(ThrowingSupplier<T, E> attempt) {
+    static <T, E extends Throwable> Pending<Optional<T>, E> wrappingOptional(final ThrowingSupplier<T, E> attempt) {
         return new Pending<>(() -> Optional.ofNullable(attempt.get()));
     }
 
@@ -371,8 +365,8 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @return A handle for interacting with the given resource.
      */
     @CheckReturnValue
-    public static <R extends AutoCloseable, E extends Throwable>
-    WithResource<R, E> with(ThrowingSupplier<R, E> resource) {
+    static <R extends AutoCloseable, E extends Throwable>
+    WithResource<R, E> with(final ThrowingSupplier<R, E> resource) {
         return new WithResource<>(resource);
     }
 
@@ -399,8 +393,8 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @return A result which may either be a value or an error.
      */
     @CheckReturnValue
-    public static <R extends AutoCloseable, T, E extends Throwable>
-    Pending<T, E> with(ThrowingSupplier<R, E> resource, ThrowingFunction<R, T, E> attempt) {
+    static <R extends AutoCloseable, T, E extends Throwable>
+    Pending<T, E> with(final ThrowingSupplier<R, E> resource, final ThrowingFunction<R, T, E> attempt) {
         return with(resource).of(attempt);
     }
 
@@ -419,8 +413,8 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @return A result which may either be a value or an error.
      */
     @CheckReturnValue
-    public static <R extends AutoCloseable, E extends Throwable>
-    Pending<Void, E> with(ThrowingSupplier<R, E> resource, ThrowingConsumer<R, E> attempt) {
+    static <R extends AutoCloseable, E extends Throwable>
+    Pending<Void, E> with(final ThrowingSupplier<R, E> resource, final ThrowingConsumer<R, E> attempt) {
         return with(resource).of(attempt);
     }
 
@@ -433,7 +427,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @return A new {@link Protocol} for handling the specified error type.
      */
     @CheckReturnValue
-    public static <E extends Exception> Protocol define(Class<E> clazz, Consumer<E> func) {
+    static <E extends Exception> Protocol define(final Class<E> clazz, final Consumer<E> func) {
         return new Protocol().define(clazz, func);
     }
 
@@ -446,7 +440,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      */
     @SafeVarargs
     @CheckReturnValue
-    public static <E extends Throwable> Result<Void, E> join(Result<Void, E>... results) {
+    static <E extends Throwable> Result<Void, E> join(final Result<Void, E>... results) {
         for (Result<Void, E> result : results) {
             if (result.isErr()) {
                 return result;
@@ -463,10 +457,14 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      */
     @SafeVarargs
     @CheckReturnValue
-    public static <E extends Throwable> Pending<Void, E> join(Result.Pending<Void, E>... results) {
+    static <E extends Throwable> Pending<Void, E> join(final Pending<Void, E>... results) {
         return new Pending<>(() -> {
-            for (Result.Pending<Void, E> result : results) {
-                result.orElseThrow();
+            for (Pending<Void, E> result : results) {
+                try {
+                    result.orElseThrow();
+                } catch (Throwable e) {
+                    throw Result.<E>errorFound(e);
+                }
             }
             return Void.INSTANCE;
         });
@@ -481,7 +479,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      */
     @SafeVarargs
     @CheckReturnValue
-    public static <T, E extends Throwable> Pending<List<T>, E> collect(Result<T, E>... results) {
+    static <T, E extends Throwable> Pending<List<T>, E> collect(final Result<T, E>... results) {
         return new Pending<>(() -> {
             final List<T> list = new ArrayList<>();
             for (Result<T, E> result : results) {
@@ -499,7 +497,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @param <E> The type of exception being thrown by the function.
      * @return A supplier wrapping this runnable function.
      */
-    public static <E extends Throwable> ThrowingSupplier<Void, E> wrapVoid(ThrowingRunnable<E> attempt) {
+    static <E extends Throwable> ThrowingSupplier<Void, E> wrapVoid(final ThrowingRunnable<E> attempt) {
         return () -> {
             attempt.run();
             return Void.INSTANCE;
@@ -515,7 +513,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @param <E> The type of exception being thrown by the function.
      * @return A function wrapping this consumer function.
      */
-    public static <R, E extends Throwable> ThrowingFunction<R, Void, E> wrapVoid(ThrowingConsumer<R, E> attempt) {
+    static <R, E extends Throwable> ThrowingFunction<R, Void, E> wrapVoid(final ThrowingConsumer<R, E> attempt) {
         return r -> {
             attempt.accept(r);
             return Void.INSTANCE;
@@ -532,8 +530,8 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @param <E> The type of exception being thrown by the function.
      * @return A function wrapping this consumer.
      */
-    public static <R1, R2, E extends Throwable>
-    ThrowingBiFunction<R1, R2, Void, E> wrapVoid(ThrowingBiConsumer<R1, R2, E> attempt) {
+    static <R1, R2, E extends Throwable>
+    ThrowingBiFunction<R1, R2, Void, E> wrapVoid(final ThrowingBiConsumer<R1, R2, E> attempt) {
         return (r1, r2) -> {
             attempt.accept(r1, r2);
             return Void.INSTANCE;
@@ -555,7 +553,19 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @return true, if an error is present.
      */
     @CheckReturnValue
-    public abstract boolean isErr();
+    boolean isErr();
+
+    /**
+     * Accepts an expression for what to do in the event of an error being present.
+     * <p>
+     *   Use this whenever you want to functionally handle both code paths (i.e. error
+     *   vs. value).
+     * </p>
+     * @throws WrongErrorException If the underlying error is an unexpected type.
+     * @param f A function consuming the error, if present.
+     * @return This, or else a complete {@link Result}.
+     */
+    Result<T, E> ifErr(final Consumer<E> f);
 
     /**
      * Returns whether a value was yielded or no error occurred.
@@ -572,7 +582,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @return true, if a value is present.
      */
     @CheckReturnValue
-    public abstract boolean isOk();
+    boolean isOk();
 
     /**
      * Accepts an expression for what to do in the event of no error
@@ -582,7 +592,24 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @param f A function consuming the value, if present.
      * @return This, or else a complete {@link Result}.
      */
-    public abstract Result<T, E> ifOk(Consumer<T> f);
+    @CheckReturnValue
+    Result<T, E> ifOk(final Consumer<T> f);
+
+    /**
+     * Attempts to retrieve the underlying value, if present, while also accounting for
+     * any potential errors.
+     *
+     * e.g.
+     * <pre>
+     *   Result.of(() -> getValueOrFail())
+     *     .get(e -> {...})
+     *     .ifPresent(t -> {...});
+     * </pre>
+     *
+     * @return The underlying value, wrapped in {@link Optional}.
+     */
+    @CheckReturnValue
+    Optional<T> get(final Consumer<E> func);
 
     /**
      * Effectively casts this object into a standard Optional instance.
@@ -592,7 +619,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @return The underlying value, wrapped in {@link Optional}.
      */
     @CheckReturnValue
-    public abstract Optional<T> get();
+    Optional<T> get();
 
     /**
      * Retrieves the underlying error, wrapped in Optional.
@@ -600,7 +627,18 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @return The underlying error, wrapped in {@link Optional}.
      */
     @CheckReturnValue
-    public abstract Optional<E> getErr();
+    Optional<E> getErr();
+
+    /**
+     * Converts this wrapper into a new type when accounting for both potential outcomes.
+     *
+     * @param ifOk The transformer applied if a value is present in the wrapper.
+     * @param ifErr The transformer applied if an error is present in the wrapper.
+     * @param <U> The type of value being output by this method.
+     * @return The output of either <code>ifOk</code> or <code>ifErr</code>.
+     */
+    @CheckReturnValue
+    <U> U fold(final Function<T, U> ifOk, final Function<E, U> ifErr);
 
     /**
      * Yields the underlying value or else the input. This is equivalent to
@@ -609,7 +647,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @return The underlying value, or else the input.
      */
     @CheckReturnValue
-    public abstract T orElse(T val);
+    T orElse(T val);
 
     /**
      * Variant of {@link PartialResult#orElseGet(Function)} which does not specifically
@@ -620,7 +658,32 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @return The underlying value, or else func.get().
      */
     @CheckReturnValue
-    public abstract T orElseGet(Supplier<T> f);
+    T orElseGet(Supplier<T> f);
+
+    /**
+     * Variant of {@link Result#get()} which simultaneously handles a potential error
+     * and yields a substitute value. Equivalent to following a {@link Result#get()}
+     * call with a call to {@link Optional#orElseGet}.
+     *
+     * @throws RuntimeException wrapping the original error, if an unexpected type
+     *                          of error is present in the wrapper.
+     * @param f A function which returns an alternate value given the error, if
+     *             present.
+     * @return The underlying value, or else func.apply(E).
+     */
+    @CheckReturnValue
+    T orElseGet(final Function<E, T> f);
+
+    /**
+     * Maps to a new Result if an error is present. Use this whenever
+     * your first and second attempt at retrieving a value may fail.
+     *
+     * @param f A new function to attempt in the presence of an error.
+     * @return The pending result of the new function, if an error is present,
+     *         or else a complete {@link Result}.
+     */
+    @CheckReturnValue
+    PartialResult<T, E> orElseTry(final ThrowingFunction<E, T, E> f);
 
     /**
      * Transposes a result with an optional value into an optional result.
@@ -629,7 +692,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @return A new Result wrapping the value directly, itself wrapped in {@link Optional}.
      */
     @CheckReturnValue
-    public abstract <U> Optional<Result<U, E>> transpose();
+    <U> Optional<Result<U, E>> transpose();
 
     /**
      * Replaces the underlying value with the result of func.apply().
@@ -648,7 +711,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @return A new Result with its value mapped.
      */
     @CheckReturnValue
-    public abstract <M> Result<M, E> map(Function<T, M> f);
+    <M> Result<M, E> map(Function<T, M> f);
 
     /**
      * Replaces the underlying error with the result of func.apply().
@@ -659,7 +722,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @return A new Result with its error mapped.
      */
     @CheckReturnValue
-    public abstract <E2 extends Throwable> Result<T, E2> mapErr(Function<E, E2> f);
+    <E2 extends Throwable> Result<T, E2> mapErr(Function<E, E2> f);
 
     /**
      * Replaces the entire value with a new result, if present.
@@ -672,7 +735,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      *         else this.
      */
     @CheckReturnValue
-    public abstract Result<T, E> flatMap(Function<T, Result<T, E>> f);
+    Result<T, E> flatMap(Function<T, Result<T, E>> f);
 
     /**
      * Replaces the entire value with a new result, if present.
@@ -685,7 +748,17 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      *         or else a complete {@link Result}.
      */
     @CheckReturnValue
-    public abstract Result<T, E> flatMapErr(Function<E, Result<T, E>> f);
+    Result<T, E> flatMapErr(Function<E, Result<T, E>> f);
+
+    /**
+     * Attempts to retrieve the underlying value, asserting that one must exist.
+     *
+     * @throws ResultUnwrapException Wraps the underlying error, if present.
+     * @return The underlying value.
+     */
+    default T unwrap() {
+        return expect("Attempted to unwrap a result with no value.");
+    }
 
     /**
      * Attempts to retrieve the underlying error, asserting that one must exist.
@@ -694,8 +767,37 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @return The underlying error.
      */
     @CheckReturnValue
-    public E unwrapErr() {
+    default E unwrapErr() {
         return expectErr("Attempted to unwrap a result with no error.");
+    }
+
+    /**
+     * Yields the underlying value, throwing a convenient, generic exception, if an
+     * error occurs.
+     *
+     * e.g.
+     * <pre>
+     *   // Runs an unsafe process, wrapping any original errors.
+     *   Object result = getResult()
+     *     .expect("Unable to get value from result.");
+     * </pre>
+     *
+     * @throws ResultUnwrapException Wraps the underlying error, if present.
+     * @param message The message to display in the event of an error.
+     * @return The underlying value.
+     */
+    T expect(final String message);
+
+    /**
+     * Formatted variant of {@link #expect}.
+     *
+     * @throws ResultUnwrapException Wraps the underlying error, if present.
+     * @param message The message to display in the event of an error.
+     * @param args A series of interpolated arguments (replacing <code>{}</code>).
+     * @return The underlying value
+     */
+    default T expectF(final String message, final Object... args) {
+        return expect(f(message, args));
     }
 
     /**
@@ -706,7 +808,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @return The underlying error.
      */
     @CheckReturnValue
-    public abstract E expectErr(String message);
+    E expectErr(String message);
 
     /**
      * Formatted variant of {@link #expectErr}.
@@ -717,48 +819,27 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @return The underlying error.
      */
     @CheckReturnValue
-    public E expectErrF(String message, Object... args) {
+    default E expectErrF(String message, Object... args) {
         return expectErr(f(message, args));
     }
 
     /**
-     * Override indicating that <code>E</code> is now reifiable and thus a more specific
-     * accessor is available.
+     * Variant of {@link #unwrap} which throws the original error, if applicable.
      *
-     * @deprecated Use {@link Result#isErr}.
-     * @see OptionalResult#isAnyErr
+     * @throws E The original error, if present.
+     * @return The underlying value.
      */
-    @Override
-    @Deprecated
-    public boolean isAnyErr() {
-        return this.isErr();
+    default T orElseThrow() throws E {
+        this.throwIfErr();
+        return unwrap();
     }
 
     /**
-     * Override indicating that <code>E</code> is now reifiable and thus a better return type
-     * is available.
+     * If an error is present, it will be thrown by this method.
      *
-     * @deprecated Use {@link Result#expectErr}.
-     * @see OptionalResult#expectAnyErr
+     * @throws E The original error, if present.
      */
-    @Override
-    @Deprecated
-    public Throwable expectAnyErr(String message) {
-        return this.expectErr(message);
-    }
-
-    /**
-     * Override indicating that <code>E</code> is now reifiable and thus a better return type
-     * is available.
-     *
-     * @deprecated Use {@link Result#expectErrF}.
-     * @see OptionalResult#expectAnyErrF
-     */
-    @Override
-    @Deprecated
-    public Throwable expectAnyErrF(String message, Object... args) {
-        return this.expectErrF(message, args);
-    }
+    void throwIfErr() throws E;
 
     /**
      * An implementation of {@link Result} which is the outcome of a successful operation.
@@ -766,7 +847,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @param <T> The type of value being wrapped
      * @param <E> A dummy parameter for the call site
      */
-    public static class Value<T, E extends Throwable> extends Result<T, E> {
+    class Value<T, E extends Throwable> implements PartialResult<T, E>, Result<T, E>, OptionalResult<T, E> {
 
         private static final Value<Void, ?> OK = new Value<>(Void.INSTANCE);
 
@@ -786,6 +867,21 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
             return this.value;
         }
 
+        @Override
+        public Value<T, E> defaultIfEmpty(Supplier<T> defaultGetter) {
+            return this;
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return false;
+        }
+
+        @Override
+        public Value<T, E> ifEmpty(Runnable f) {
+            return this;
+        }
+
         /**
          * @deprecated Always false.
          */
@@ -795,12 +891,13 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
             return false;
         }
 
-        /**
-         * @deprecated Always false.
-         */
         @Override
-        @Deprecated
         public boolean isErr(Class<? super E> clazz) {
+            return false;
+        }
+
+        @Override
+        public boolean isAnyErr() {
             return false;
         }
 
@@ -809,7 +906,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
          */
         @Override
         @Deprecated
-        public Result<T, E> ifErr(Consumer<E> f) {
+        public Value<T, E> ifErr(Consumer<E> f) {
             return this;
         }
 
@@ -827,9 +924,14 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
          */
         @Override
         @Deprecated
-        public Result<T, E> ifOk(Consumer<T> f) {
+        public Value<T, E> ifOk(Consumer<T> f) {
             f.accept(this.value);
             return this;
+        }
+
+        @Override
+        public Optional<T> get(Consumer<E> func) {
+            return Optional.of(this.value);
         }
 
         /**
@@ -851,6 +953,15 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
         }
 
         /**
+         * @deprecated Always returns empty.
+         */
+        @Override
+        @Deprecated
+        public Optional<Throwable> getAnyErr() {
+            return Optional.empty();
+        }
+
+        /**
          * @deprecated Always returns <code>ifOk#apply</code>
          */
         @Override
@@ -868,6 +979,11 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
             return this.value;
         }
 
+        @Override
+        public T expectF(String message, Object... args) {
+            return this.value;
+        }
+
         /**
          * @deprecated Always fails.
          */
@@ -875,6 +991,16 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
         @Deprecated
         public E expectErr(String message) {
             throw unwrapEx(message);
+        }
+
+        @Override
+        public E expectErrF(String message, Object... args) {
+            throw unwrapEx(f(message, args));
+        }
+
+        @Override
+        public T orElseThrow() {
+            return this.value;
         }
 
         /**
@@ -916,7 +1042,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
          */
         @Override
         @Deprecated
-        public Result<T, E> orElseTry(ThrowingFunction<E, T, E> f) {
+        public PartialResult<T, E> orElseTry(ThrowingFunction<E, T, E> f) {
             return this;
         }
 
@@ -965,6 +1091,16 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
         public Result<T, E> flatMapErr(Function<E, Result<T, E>> f) {
             return this;
         }
+
+        @Override
+        public T unwrap() {
+            return this.value;
+        }
+
+        @Override
+        public E unwrapErr() {
+            throw unwrapEx("Attempted to unwrap a result with no error.");
+        }
     }
 
     /**
@@ -973,12 +1109,12 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @param <T> A dummy parameter for the call site
      * @param <E> The type of error being wrapped
      */
-    public static class Error<T, E extends Throwable> extends Result<T, E> {
+    class Error<T, E extends Throwable> implements Result<T, E>, OptionalResult<T, E> {
 
         private final E error;
 
         private Error(E error) {
-            this.error = error;
+            this.error = Objects.requireNonNull(error);
         }
 
         /**
@@ -991,6 +1127,21 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
             return this.error;
         }
 
+        @Override
+        public Error<T, E> defaultIfEmpty(Supplier<T> defaultGetter) {
+            return this;
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return false;
+        }
+
+        @Override
+        public Error<T, E> ifEmpty(Runnable f) {
+            return this;
+        }
+
         /**
          * @deprecated Always true.
          */
@@ -1001,23 +1152,11 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
         }
 
         /**
-         * @deprecated Can safely use {@link #isErr}
-         */
-        @Override
-        @Deprecated
-        public boolean isErr(Class<? super E> clazz) {
-            if (!clazz.isInstance(this.error)) {
-                throw wrongErrorFound(this.error);
-            }
-            return true;
-        }
-
-        /**
          * @deprecated Always an error.
          */
         @Override
         @Deprecated
-        public Result<T, E> ifErr(Consumer<E> f) {
+        public Error<T, E> ifErr(Consumer<E> f) {
             try {
                 f.accept(this.error);
             } catch (ClassCastException ignored) {
@@ -1040,8 +1179,13 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
          */
         @Override
         @Deprecated
-        public Result<T, E> ifOk(Consumer<T> f) {
+        public Error<T, E> ifOk(Consumer<T> f) {
             return this;
+        }
+
+        @Override
+        public Optional<T> get(Consumer<E> func) {
+            return Optional.empty();
         }
 
         /**
@@ -1058,7 +1202,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
          */
         @Override
         public Optional<E> getErr() {
-            return Optional.ofNullable(this.error);
+            return Optional.of(this.error);
         }
 
         /**
@@ -1083,6 +1227,11 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
             throw unwrapEx(message);
         }
 
+        @Override
+        public T expectF(String message, Object... args) {
+            throw unwrapEx(f(message, args));
+        }
+
         /**
          * @deprecated Call {@link Error#expose} instead.
          */
@@ -1090,6 +1239,16 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
         @Deprecated
         public E expectErr(String message) {
             return this.error;
+        }
+
+        @Override
+        public E expectErrF(String message, Object... args) {
+            return this.error;
+        }
+
+        @Override
+        public T orElseThrow() throws E {
+            throw this.error;
         }
 
         @Override
@@ -1195,17 +1354,32 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
                 throw wrongErrorFound(this.error);
             }
         }
+
+        @Override
+        public T unwrap() {
+            throw unwrapEx("Attempted to unwrap a result with no value.");
+        }
+
+        @Override
+        public E unwrapErr() {
+            return this.error;
+        }
     }
 
-    public static class Empty<T, E extends Throwable> extends OptionalResult<T, E> {
+    class Empty<T, E extends Throwable> implements OptionalResult<T, E>, PartialOptionalResult<T, E> {
 
         static final Empty<?, ?> INSTANCE = new Empty<>();
 
         private Empty() {}
 
         @Override
-        public PartialResult<T, E> defaultIfEmpty(Supplier<T> defaultGetter) {
+        public Value<T, E> defaultIfEmpty(Supplier<T> defaultGetter) {
             return new Value<>(Objects.requireNonNull(defaultGetter.get(), "Default getter"));
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return true;
         }
 
         /**
@@ -1214,8 +1388,28 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
         @Override
         @Deprecated
         @CheckReturnValue
-        public OptionalResult<T, E> ifEmpty(Runnable f) {
+        public Empty<T, E> ifEmpty(Runnable f) {
             f.run();
+            return this;
+        }
+
+        @Override
+        public boolean isErr() {
+            return false;
+        }
+
+        @Override
+        public Empty<T, E> ifErr(Consumer<E> f) {
+            return this;
+        }
+
+        @Override
+        public boolean isOk() {
+            return false;
+        }
+
+        @Override
+        public Empty<T, E> ifOk(Consumer<T> f) {
             return this;
         }
 
@@ -1248,23 +1442,68 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
             return Optional.empty();
         }
 
+        @Override
+        public Optional<T> get() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<E> getErr() {
+            return Optional.empty();
+        }
+
+        @Override
+        public T orElse(T val) {
+            return val;
+        }
+
+        @Override
+        public T orElseGet(Supplier<T> f) {
+            return f.get();
+        }
+
+        @Override
+        public Optional<Throwable> getAnyErr() {
+            return Optional.empty();
+        }
+
+        @Override
+        public T unwrap() {
+            throw unwrapEx("Attempted to unwrap a result with no value.");
+        }
+
+        @Override
+        public E unwrapErr() {
+            throw unwrapEx("Attempted to unwrap a result with no error.");
+        }
+
         /**
          * @deprecated Always throws NPE.
          */
         @Override
         @Deprecated
         public T expect(String message) {
-            throw new NullPointerException("No value in wrapper");
+            throw new NullPointerException(message);
         }
 
         @Override
-        public Throwable expectAnyErr(String message) {
-            return new NullPointerException(message);
+        public T expectF(String message, Object... args) {
+            throw new NullPointerException(f(message, args));
         }
 
         @Override
-        public Throwable expectAnyErrF(String message, Object... args) {
-            return this.expectAnyErr(f(message, args));
+        public E expectErr(String message) {
+            throw new NullPointerException(message);
+        }
+
+        @Override
+        public E expectErrF(String message, Object... args) {
+            throw new NullPointerException(f(message, args));
+        }
+
+        @Override
+        public T orElseThrow() {
+            throw new NullPointerException("No value in wrapper.");
         }
 
         /**
@@ -1288,7 +1527,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @param <T> The type of value being wrapped.
      * @param <E> The type of error being wrapped.
      */
-    public static class Pending<T, E extends Throwable> extends PartialResult<T, E> {
+    class Pending<T, E extends Throwable> implements PartialResult<T, E> {
 
         private final ThrowingSupplier<T, E> resultGetter;
         private final Supplier<T> defaultGetter;
@@ -1320,6 +1559,11 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
         }
 
         @Override
+        public Optional<Throwable> getAnyErr() {
+            return this.execute().getErr().map(Function.identity());
+        }
+
+        @Override
         @CheckReturnValue
         public boolean isErr(Class<? super E> clazz) {
             return checkError(this.execute(), clazz);
@@ -1342,12 +1586,12 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
         }
 
         @Override
-        public Throwable expectAnyErr(String message) {
+        public Throwable expectErr(String message) {
             return this.execute().expectErr(message);
         }
 
         @Override
-        public Throwable expectAnyErrF(String message, Object... args) {
+        public Throwable expectErrF(String message, Object... args) {
             return this.execute().expectErrF(message, args);
         }
 
@@ -1416,7 +1660,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      * @param <T> The type of value being wrapped.
      * @param <E> The type of error being wrapped.
      */
-    public static class PendingNullable<T, E extends Throwable> extends OptionalResult<T, E> {
+    class PendingNullable<T, E extends Throwable> implements PartialOptionalResult<T, E> {
 
         private final ThrowingSupplier<T, E> resultGetter;
         private volatile OptionalResult<T, E> result = null;
@@ -1433,8 +1677,9 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
 
         @Override
         @CheckReturnValue
-        public OptionalResult<T, E> ifEmpty(Runnable f) {
-            return this.execute().ifEmpty(f);
+        public PartialOptionalResult<T, E> ifEmpty(Runnable f) {
+            this.execute().ifEmpty(f);
+            return this;
         }
 
         @Override
@@ -1446,7 +1691,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
         @Override
         @CheckReturnValue
         public boolean isAnyErr() {
-            return this.execute().isAnyErr();
+            return this.execute().isErr();
         }
 
         @Override
@@ -1456,22 +1701,27 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
         }
 
         @Override
+        public Optional<Throwable> getAnyErr() {
+            return this.execute().getErr().map(Function.identity());
+        }
+
+        @Override
         public T expect(String message) {
             return this.execute().expect(message);
         }
 
         @Override
-        public Throwable expectAnyErr(String message) {
-            return this.execute().expectAnyErr(message);
+        public Throwable expectErr(String message) {
+            return this.execute().expectErr(message);
         }
 
         @Override
-        public Throwable expectAnyErrF(String message, Object... args) {
-            return this.execute().expectAnyErrF(message, args);
+        public Throwable expectErrF(String message, Object... args) {
+            return this.execute().expectErrF(message, args);
         }
 
         @Override
-        public void throwIfErr() throws E {
+        public void throwIfErr() throws Throwable {
             this.execute().throwIfErr();
         }
 
@@ -1497,9 +1747,10 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
      *
      * @throws WrongErrorException if the result contains an unexpected error.
      */
-    static <T, E extends Throwable> boolean checkError(OptionalResult<T, E> result, Class<? super E> clazz) {
+    @SuppressWarnings("rawtypes")
+    static <T, E extends Throwable> boolean checkError(BasicResult<T, E> result, Class<? super E> clazz) {
         if (result instanceof Error) {
-            final E error = ((Error<T, E>) result).expose();
+            final Throwable error = ((Error) result).expose();
             if (!clazz.isInstance(error)) {
                 throw wrongErrorFound(error);
             }
@@ -1519,7 +1770,7 @@ public abstract class Result<T, E extends Throwable> extends PartialResult<T, E>
     }
 
     /** Forwards `err` and informs the user that the wrong kind of error was caught. */
-    private static WrongErrorException wrongErrorFound(Throwable err) {
+    static WrongErrorException wrongErrorFound(Throwable err) {
         return wrongErrorEx("Wrong type of error caught by wrapper.", err);
     }
 }

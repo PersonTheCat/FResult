@@ -94,7 +94,7 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
 
     /**
      * Variant of {@link WithResource#nullable) which wraps the given value in Optional
-     * instead of returning an {@link OptionalResult}. This may be useful in some
+     * instead of returning an {@link PartialOptionalResult }. This may be useful in some
      * cases where it is syntactically shorter to handle null values via {@link Optional}.
      *
      * @param attempt A function which consumes the resource and either returns a

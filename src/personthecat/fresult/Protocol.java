@@ -1,8 +1,8 @@
 package personthecat.fresult;
 
 import personthecat.fresult.exception.MissingProcedureException;
-import personthecat.fresult.interfaces.ThrowingRunnable;
-import personthecat.fresult.interfaces.ThrowingSupplier;
+import personthecat.fresult.functions.ThrowingRunnable;
+import personthecat.fresult.functions.ThrowingSupplier;
 
 import javax.annotation.CheckReturnValue;
 import java.util.HashSet;

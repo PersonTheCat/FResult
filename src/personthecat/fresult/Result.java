@@ -2,7 +2,12 @@ package personthecat.fresult;
 
 import personthecat.fresult.exception.ResultUnwrapException;
 import personthecat.fresult.exception.WrongErrorException;
-import personthecat.fresult.functions.*;
+import personthecat.fresult.functions.ThrowingRunnable;
+import personthecat.fresult.functions.ThrowingBiConsumer;
+import personthecat.fresult.functions.ThrowingBiFunction;
+import personthecat.fresult.functions.ThrowingConsumer;
+import personthecat.fresult.functions.ThrowingFunction;
+import personthecat.fresult.functions.ThrowingSupplier;
 
 import javax.annotation.CheckReturnValue;
 import java.util.ArrayList;

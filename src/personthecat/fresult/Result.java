@@ -2,7 +2,7 @@ package personthecat.fresult;
 
 import personthecat.fresult.exception.ResultUnwrapException;
 import personthecat.fresult.exception.WrongErrorException;
-import personthecat.fresult.interfaces.*;
+import personthecat.fresult.functions.*;
 
 import javax.annotation.CheckReturnValue;
 import java.util.ArrayList;

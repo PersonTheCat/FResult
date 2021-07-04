@@ -1,8 +1,8 @@
 package personthecat.fresult;
 
-import personthecat.fresult.interfaces.ThrowingConsumer;
-import personthecat.fresult.interfaces.ThrowingFunction;
-import personthecat.fresult.interfaces.ThrowingSupplier;
+import personthecat.fresult.functions.ThrowingConsumer;
+import personthecat.fresult.functions.ThrowingFunction;
+import personthecat.fresult.functions.ThrowingSupplier;
 
 import java.util.Optional;
 

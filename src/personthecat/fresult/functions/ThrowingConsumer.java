@@ -1,4 +1,4 @@
-package personthecat.fresult.interfaces;
+package personthecat.fresult.functions;
 
 @FunctionalInterface
 public interface ThrowingConsumer<T, E extends Throwable> {

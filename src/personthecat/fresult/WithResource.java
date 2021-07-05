@@ -194,7 +194,7 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
         try (R r = this.rGetter.get()) {
             return attempt.apply(r);
         } catch (Throwable e) {
-            throw Result.<E>errorFound(e);
+            throw Shorthand.<E>errorFound(e);
         }
     }
 }

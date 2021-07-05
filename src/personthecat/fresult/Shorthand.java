@@ -63,4 +63,36 @@ class Shorthand {
         sb.append(s.substring(begin));
         return sb.toString();
     }
+
+    /**
+     * Determines whether this wrapper contains the expected type of error.
+     *
+     * @throws WrongErrorException if the result contains an unexpected error.
+     */
+    @SuppressWarnings("rawtypes")
+    static <T, E extends Throwable> boolean checkError(final BasicResult<T, E> result, final Class<? super E> clazz) {
+        if (result instanceof Result.Error) {
+            final Throwable error = ((Result.Error) result).expose();
+            if (!clazz.isInstance(error)) {
+                throw wrongErrorFound(error);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /** Attempts to cast the error into the appropriate subclass. */
+    @SuppressWarnings("unchecked")
+    static <E extends Throwable> E errorFound(final Throwable err) {
+        try {
+            return (E) err;
+        } catch (final ClassCastException e) {
+            throw wrongErrorFound(err);
+        }
+    }
+
+    /** Forwards `err` and informs the user that the wrong kind of error was caught. */
+    static WrongErrorException wrongErrorFound(final Throwable err) {
+        return wrongErrorEx("Wrong type of error caught by wrapper.", err);
+    }
 }

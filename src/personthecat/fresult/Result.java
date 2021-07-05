@@ -21,11 +21,13 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static personthecat.fresult.Shorthand.checkError;
+import static personthecat.fresult.Shorthand.errorFound;
 import static personthecat.fresult.Shorthand.f;
 import static personthecat.fresult.Shorthand.runEx;
 import static personthecat.fresult.Shorthand.unwrapEx;
 import static personthecat.fresult.Shorthand.warn;
-import static personthecat.fresult.Shorthand.wrongErrorEx;
+import static personthecat.fresult.Shorthand.wrongErrorFound;
 
 /**
  * <h3>
@@ -504,7 +506,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
                 try {
                     result.orElseThrow();
                 } catch (final Throwable e) {
-                    throw Result.<E>errorFound(e);
+                    throw Shorthand.<E>errorFound(e);
                 }
             }
             return Void.INSTANCE;
@@ -917,7 +919,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
      * @return The underlying error.
      */
     @CheckReturnValue
-    E expectErr(String message);
+    E expectErr(final String message);
 
     /**
      * Formatted variant of {@link #expectErr}.
@@ -1035,7 +1037,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public Value<T, E> ifErr(Consumer<E> f) {
+        public Value<T, E> ifErr(final Consumer<E> f) {
             return this;
         }
 
@@ -1415,7 +1417,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
             try {
                 f.accept(this.error);
             } catch (ClassCastException ignored) {
-                throw Result.wrongErrorFound(this.error);
+                throw wrongErrorFound(this.error);
             }
             return this;
         }
@@ -1675,7 +1677,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
             try {
                 return f.apply(this.error);
             } catch (ClassCastException ignored) {
-                throw wrongErrorFound(this.error);
+                throw Shorthand.wrongErrorFound(this.error);
             }
         }
 
@@ -2176,7 +2178,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
             try {
                 value = this.resultGetter.get();
             } catch (final Throwable e) {
-                return this.result = new Error<>(errorFound(e));
+                return this.result = new Error<>(Shorthand.errorFound(e));
             }
 
             if (value != null) {
@@ -2296,37 +2298,5 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
                 return this.result = new Error<>(errorFound(e));
             }
         }
-    }
-
-    /**
-     * Determines whether this wrapper contains the expected type of error.
-     *
-     * @throws WrongErrorException if the result contains an unexpected error.
-     */
-    @SuppressWarnings("rawtypes")
-    static <T, E extends Throwable> boolean checkError(final BasicResult<T, E> result, final Class<? super E> clazz) {
-        if (result instanceof Error) {
-            final Throwable error = ((Error) result).expose();
-            if (!clazz.isInstance(error)) {
-                throw wrongErrorFound(error);
-            }
-            return true;
-        }
-        return false;
-    }
-
-    /** Attempts to cast the error into the appropriate subclass. */
-    @SuppressWarnings("unchecked")
-    static <E extends Throwable> E errorFound(final Throwable err) {
-        try {
-            return (E) err;
-        } catch (final ClassCastException e) {
-            throw wrongErrorFound(err);
-        }
-    }
-
-    /** Forwards `err` and informs the user that the wrong kind of error was caught. */
-    static WrongErrorException wrongErrorFound(final Throwable err) {
-        return wrongErrorEx("Wrong type of error caught by wrapper.", err);
     }
 }

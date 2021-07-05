@@ -265,7 +265,7 @@ class WithResources<R1 extends AutoCloseable, R2 extends AutoCloseable, E extend
         try (R1 r1 = this.r1Getter.get(); R2 r2 = this.r2Getter.get()) {
             return attempt.apply(r1, r2);
         } catch (Throwable e) {
-            throw Result.<E>errorFound(e);
+            throw Shorthand.<E>errorFound(e);
         }
     }
 }

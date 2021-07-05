@@ -788,6 +788,30 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
     }
 
     /**
+     * Variant of {@link #orElseTry(ThrowingFunction)} which handles the error when
+     * given a {@link Resolver}.
+     *
+     * @param resolver Instructions for handling errors beyond this point.
+     * @param f A new function to attempt in the presence of an error.
+     * @return A result which can only be a value.
+     */
+    @CheckReturnValue
+    Value<T, Throwable> orElseTry(final Resolver<T> resolver, final ThrowingFunction<E, T, Throwable> f);
+
+    /**
+     * Variant of {@link #orElseTry(Resolver, ThrowingFunction)} which does not
+     * consume the underlying error.
+     *
+     * @param resolver Instructions for handling errors beyond this point.
+     * @param f A new function to attempt in the presence of an error.
+     * @return A result which may contain either a value or <b>any</b> error.
+     */
+    @CheckReturnValue
+    default Value<T, Throwable> orElseTry(final Resolver<T> resolver, final ThrowingSupplier<T, Throwable> f) {
+        return this.orElseTry(resolver, e -> f.get());
+    }
+
+    /**
      * Transposes a result with an optional value into an optional result.
      *
      * @throws ClassCastException if the underlying value is not wrapped in {@link Optional<U>}.
@@ -1357,6 +1381,26 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
             return (Value<T, Throwable>) this;
         }
 
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("unchecked")
+        public Value<T, Throwable> orElseTry(final Resolver<T> resolver, final ThrowingFunction<E, T, Throwable> f) {
+            return (Value<T, Throwable>) this;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("unchecked")
+        public Value<T, Throwable> orElseTry(final Resolver<T> resolver, final ThrowingSupplier<T, Throwable> f) {
+            return (Value<T, Throwable>) this;
+        }
+
         @Override
         @SuppressWarnings("unchecked")
         public <U> Optional<Result<U, E>> transpose() {
@@ -1808,6 +1852,24 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         @Deprecated
         public Result<T, Throwable> orElseTry(final Protocol protocol, final ThrowingSupplier<T, Throwable> f) {
             return protocol.of(f);
+        }
+
+        /**
+         * @deprecated Always runs function.
+         */
+        @Override
+        @Deprecated
+        public Value<T, Throwable> orElseTry(final Resolver<T> resolver, final ThrowingFunction<E, T, Throwable> f) {
+            return resolver.of(() -> f.apply(this.error));
+        }
+
+        /**
+         * @deprecated Always runs function.
+         */
+        @Override
+        @Deprecated
+        public Value<T, Throwable> orElseTry(final Resolver<T> resolver, final ThrowingSupplier<T, Throwable> f) {
+            return resolver.of(f);
         }
 
         @Override
@@ -2412,8 +2474,15 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         }
 
         @Override
+        @CheckReturnValue
         public Result<T, Throwable> orElseTry(final Protocol protocol, final ThrowingFunction<E, T, Throwable> f) {
             return this.execute().orElseTry(protocol, f);
+        }
+
+        @Override
+        @CheckReturnValue
+        public Value<T, Throwable> orElseTry(final Resolver<T> resolver, final ThrowingFunction<E, T, Throwable> f) {
+            return this.execute().orElseTry(resolver, f);
         }
 
         /**

@@ -132,6 +132,18 @@ public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E>
     Result<T, Throwable> orElseTry(final Protocol protocol, final ThrowingFunction<E, T, Throwable> f);
 
     /**
+     * Variant of {@link #orElseTry(ThrowingFunction)} which handles the error when
+     * given a {@link Resolver}.
+     *
+     * @param resolver Instructions for how to resolve a value in the presence of
+     *                 an error.
+     * @param f A new function to attempt in the presence of an error.
+     * @return A result which can only be a value.
+     */
+    @CheckReturnValue
+    Result.Value<T, Throwable> orElseTry(final Resolver<T> resolver, final ThrowingFunction<E, T, Throwable> f);
+
+    /**
      * Attempts to retrieve the underlying value, asserting that one must exist.
      *
      * @throws ResultUnwrapException Wraps the underlying error, if present.

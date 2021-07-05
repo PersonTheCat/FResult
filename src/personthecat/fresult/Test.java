@@ -11,6 +11,23 @@ import static personthecat.fresult.Shorthand.runEx;
 public class Test {
 
     public static void main(final String[] args) {
+        // Maybe use a protocol?
+        // Separately handle specific exceptions and nullability
+        final String result = Result.<String, IllegalArgumentException>nullable(() -> "Hello, World")
+            .ifEmpty(() -> info("It was empty!"))
+            .defaultIfEmpty(() -> "Output was null")
+            .ifErr(e -> info("There was an error!"))
+            .resolve(e -> "Default value")
+            .expose();
+        // Ignore all exceptions and null values
+        final String r2 = Result.suppressNullable(() -> "Hello, World!")
+            .orElse("");
+
+        final String r = Result
+            .resolve(IllegalArgumentException.class, e -> "Bad argument")
+            .resolve(IllegalStateException.class, e -> "Ya done goofed")
+            .resolve(RuntimeException.class, e -> "Not sure what ya did")
+            .expose(() -> "It worked!");
         try {
             testErrorHandling();
             testWrongError();

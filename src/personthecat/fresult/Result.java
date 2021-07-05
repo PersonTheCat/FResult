@@ -474,7 +474,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      */
     @CheckReturnValue
     static <E extends Throwable> Protocol define(final Class<E> clazz, final Consumer<E> f) {
-        return new Protocol().define(clazz, f);
+        return new Protocol().and(clazz, f);
     }
 
     /**
@@ -490,7 +490,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      */
     @CheckReturnValue
     static <T, E extends Throwable> Resolver<T> resolve(final Class<E> clazz, final Function<E, T> f) {
-        return new Resolver<T>().resolve(clazz, f);
+        return new Resolver<T>().and(clazz, f);
     }
 
     /**
@@ -656,22 +656,6 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      */
     @CheckReturnValue
     Result<T, E> ifOk(final Consumer<T> f);
-
-    /**
-     * Attempts to retrieve the underlying value, if present, while also accounting for
-     * any potential errors.
-     *
-     * e.g.
-     * <pre>
-     *   Result.of(() -> getValueOrFail())
-     *     .get(e -> {...})
-     *     .ifPresent(t -> {...});
-     * </pre>
-     *
-     * @return The underlying value, wrapped in {@link Optional}.
-     */
-    @CheckReturnValue
-    Optional<T> get(final Consumer<E> func);
 
     /**
      * Effectively casts this object into a standard Optional instance.
@@ -994,16 +978,6 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
     Result<Void, Throwable> andThenSuppress(final ThrowingRunnable<Throwable> attempt);
 
     /**
-     * Attempts to retrieve the underlying value, asserting that one must exist.
-     *
-     * @throws ResultUnwrapException Wraps the underlying error, if present.
-     * @return The underlying value.
-     */
-    default T unwrap() {
-        return this.expect("Attempted to unwrap a result with no value.");
-    }
-
-    /**
      * Attempts to retrieve the underlying error, asserting that one must exist.
      *
      * @throws ResultUnwrapException If no error is present to be unwrapped.
@@ -1012,35 +986,6 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
     @CheckReturnValue
     default E unwrapErr() {
         return this.expectErr("Attempted to unwrap a result with no error.");
-    }
-
-    /**
-     * Yields the underlying value, throwing a convenient, generic exception, if an
-     * error occurs.
-     *
-     * e.g.
-     * <pre>
-     *   // Runs an unsafe process, wrapping any original errors.
-     *   Object result = getResult()
-     *     .expect("Unable to get value from result.");
-     * </pre>
-     *
-     * @throws ResultUnwrapException Wraps the underlying error, if present.
-     * @param message The message to display in the event of an error.
-     * @return The underlying value.
-     */
-    T expect(final String message);
-
-    /**
-     * Formatted variant of {@link #expect}.
-     *
-     * @throws ResultUnwrapException Wraps the underlying error, if present.
-     * @param message The message to display in the event of an error.
-     * @param args A series of interpolated arguments (replacing <code>{}</code>).
-     * @return The underlying value
-     */
-    default T expectF(final String message, final Object... args) {
-        return expect(f(message, args));
     }
 
     /**
@@ -1842,7 +1787,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         @Override
         @Deprecated
         public Result<T, Throwable> orElseTry(final Protocol protocol, final ThrowingFunction<E, T, Throwable> f) {
-            return protocol.of(() -> f.apply(this.error));
+            return protocol.suppress(() -> f.apply(this.error));
         }
 
         /**
@@ -1851,7 +1796,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         @Override
         @Deprecated
         public Result<T, Throwable> orElseTry(final Protocol protocol, final ThrowingSupplier<T, Throwable> f) {
-            return protocol.of(f);
+            return protocol.suppress(f);
         }
 
         /**
@@ -1860,7 +1805,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         @Override
         @Deprecated
         public Value<T, Throwable> orElseTry(final Resolver<T> resolver, final ThrowingFunction<E, T, Throwable> f) {
-            return resolver.of(() -> f.apply(this.error));
+            return resolver.suppress(() -> f.apply(this.error));
         }
 
         /**
@@ -1869,7 +1814,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         @Override
         @Deprecated
         public Value<T, Throwable> orElseTry(final Resolver<T> resolver, final ThrowingSupplier<T, Throwable> f) {
-            return resolver.of(f);
+            return resolver.suppress(f);
         }
 
         @Override
@@ -2207,7 +2152,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         @Override
         @Deprecated
         public Result<T, Throwable> orElseTry(final Protocol protocol, final ThrowingSupplier<T, Throwable> f) {
-            return protocol.of(f);
+            return protocol.suppress(f);
         }
 
         /**
@@ -2414,6 +2359,11 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         }
 
         @Override
+        public Optional<T> get(final Consumer<E> f) {
+            return this.execute().get(f);
+        }
+
+        @Override
         @SuppressWarnings("unchecked")
         public Optional<Throwable> getAnyErr() {
             return (Optional<Throwable>) this.execute().getErr();
@@ -2449,11 +2399,6 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         @Override
         public Throwable expectErr(final String message) {
             return this.execute().expectErr(message);
-        }
-
-        @Override
-        public Throwable expectErrF(final String message, final Object... args) {
-            return this.execute().expectErrF(message, args);
         }
 
         @Override
@@ -2597,11 +2542,6 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         @Override
         public Throwable expectErr(final String message) {
             return this.execute().expectErr(message);
-        }
-
-        @Override
-        public Throwable expectErrF(final String message, final Object... args) {
-            return this.execute().expectErrF(message, args);
         }
 
         @Override

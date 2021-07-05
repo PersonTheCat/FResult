@@ -29,7 +29,8 @@ public class Resolver<T> {
     Resolver() {}
 
     /**
-     * Defines a new procedure for handling a specific type of error.
+     * Defines a new procedure for handling a specific type of error. Acquire this handler
+     * via {@link Result#resolve}.
      *
      * @param type The type of error being handled.
      * @param func A function consuming the specified error, if present.
@@ -37,7 +38,7 @@ public class Resolver<T> {
      */
     @CheckReturnValue
     @SuppressWarnings("unchecked")
-    public <E extends Throwable> Resolver<T> resolve(final Class<E> type, final Function<E, T> func) {
+    public <E extends Throwable> Resolver<T> and(final Class<E> type, final Function<E, T> func) {
         this.procedures.add((Procedure<Throwable, T>) new Procedure<>(type, func));
         return this;
     }
@@ -53,7 +54,7 @@ public class Resolver<T> {
      * @return The result of the operation.
      */
     @CheckReturnValue
-    public Result.Value<T, Throwable> of(final ThrowingSupplier<T, Throwable> attempt) {
+    public Result.Value<T, Throwable> suppress(final ThrowingSupplier<T, Throwable> attempt) {
         T value;
         try {
             value = attempt.get();
@@ -64,22 +65,7 @@ public class Resolver<T> {
     }
 
     /**
-     * Optional syntactic variant of {@link #of(ThrowingSupplier)} with equivalent
-     * functionality.
-     *
-     * @see Resolver#of(ThrowingSupplier)
-     * @throws MissingProcedureException If a caught exception is undefined.
-     * @throws NullPointerException If the attempt returns null.
-     * @param attempt A function which either yields a value or throws an exception.
-     * @return The result of the operation.
-     */
-    @CheckReturnValue
-    public Result<T, Throwable> suppress(final ThrowingSupplier<T, Throwable> attempt) {
-        return this.of(attempt);
-    }
-
-    /**
-     * Variant of {@link Protocol#of(ThrowingSupplier)} which is allowed to return null.
+     * Variant of {@link Protocol#suppress(ThrowingSupplier)} which is allowed to return null.
      * After defining procedures for this wrapper, the next ideal step is to call
      * {@link OptionalResult#defaultIfEmpty} to obtain an upgraded {@link PartialResult}.
      *
@@ -96,24 +82,27 @@ public class Resolver<T> {
     }
 
     /**
-     * Variant of {@link #of(ThrowingSupplier)} which returns the value
+     * Variant of {@link #nullable(ThrowingSupplier)} which returns the value
      * directly, wrapped in {@link Optional}.
      *
      * @param attempt A function which either yields a value or throws an exception.
      * @return The value yielded by the operation, wrapped in {@link Optional}.
      */
     @CheckReturnValue
-    public Optional<T> optional(final ThrowingSupplier<T, Throwable> attempt) {
+    public Optional<T> get(final ThrowingSupplier<T, Throwable> attempt) {
         return this.nullable(attempt).get();
     }
 
     /**
+     * Directly exposes the value resulting from this attempt, or else the output of
+     * the defined handlers.
      *
+     * @throws NullPointerException If the attempt returns null.
      * @param attempt A function which either yield a value or throws an exception.
      * @return The output of this function, or else one of the provided defaults.
      */
     public T expose(final ThrowingSupplier<T, Throwable> attempt) {
-        return this.of(attempt).expose();
+        return this.suppress(attempt).expose();
     }
 
     /**

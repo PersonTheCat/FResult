@@ -28,14 +28,15 @@ public class Protocol {
     Protocol() {}
 
     /**
-     * Defines a new procedure for handling a specific type of error.
+     * Defines a new procedure for handling a specific type of error. Acquire this handler
+     * via {@link Result#define}.
      *
      * @param type The type of error being handled.
      * @param func A function consuming the specified error, if present.
      * @return The current Protocol which now contains the procedure.
      */
     @CheckReturnValue
-    public <E extends Throwable> Protocol define(final Class<E> type, final Consumer<E> func) {
+    public <E extends Throwable> Protocol and(final Class<E> type, final Consumer<E> func) {
         this.procedures.add(new Procedure<>(type, func));
         return this;
     }
@@ -52,7 +53,7 @@ public class Protocol {
      * @return The result of the operation.
      */
     @CheckReturnValue
-    public <T> Result<T, Throwable> of(final ThrowingSupplier<T, Throwable> attempt) {
+    public <T> Result<T, Throwable> suppress(final ThrowingSupplier<T, Throwable> attempt) {
         final T value;
         try {
             value = attempt.get();
@@ -66,47 +67,18 @@ public class Protocol {
     }
 
     /**
-     * Variant of {@link #of(ThrowingSupplier)} which does not yield a value.
+     * Variant of {@link #suppress(ThrowingSupplier)} which does not yield a value.
      *
-     * @param attempt A function which may throw an exception.
-     * @return The result of the operation.
-     */
-    @CheckReturnValue
-    public Result<Void, Throwable> of(final ThrowingRunnable<Throwable> attempt) {
-        return this.of(Result.wrapVoid(attempt));
-    }
-
-    /**
-     * Optional syntactic variant of {@link #of(ThrowingSupplier)} with equivalent
-     * functionality.
-     *
-     * @see Protocol#of(ThrowingSupplier)
-     * @throws MissingProcedureException If a caught exception is undefined.
-     * @throws NullPointerException If the attempt returns null.
-     * @param attempt A function which either yields a value or throws an exception.
-     * @param <T> The type of value expected from this procedure.
-     * @return The result of the operation.
-     */
-    @CheckReturnValue
-    public <T> Result<T, Throwable> suppress(final ThrowingSupplier<T, Throwable> attempt) {
-        return this.of(attempt);
-    }
-
-    /**
-     * Optional syntactic variant of {@link #of(ThrowingRunnable)} with equivalent
-     * functionality.
-     *
-     * @see Protocol#of(ThrowingRunnable)
      * @param attempt A function which may throw an exception.
      * @return The result of the operation.
      */
     @CheckReturnValue
     public Result<Void, Throwable> suppress(final ThrowingRunnable<Throwable> attempt) {
-        return this.of(attempt);
+        return this.suppress(Result.wrapVoid(attempt));
     }
 
     /**
-     * Variant of {@link Protocol#of(ThrowingSupplier)} which is allowed to return null.
+     * Variant of {@link Protocol#suppress(ThrowingSupplier)} which is allowed to return null.
      * After defining procedures for this wrapper, the next ideal step is to call
      * {@link OptionalResult#defaultIfEmpty} to obtain an upgraded {@link PartialResult}.
      *
@@ -137,11 +109,11 @@ public class Protocol {
      * @return A result which may either be an optional value or an error.
      */
     public <T> Result<Optional<T>, Throwable> wrappingOptional(final ThrowingSupplier<T, Throwable> attempt) {
-        return this.of(() -> Optional.ofNullable(attempt.get()));
+        return this.suppress(() -> Optional.ofNullable(attempt.get()));
     }
 
     /**
-     * Variant of {@link #of(ThrowingSupplier)} which returns the value directly,
+     * Variant of {@link #nullable(ThrowingSupplier)} which returns the value directly,
      * wrapped in {@link Optional}.
      *
      * @param attempt A function which either yields a value or throws an exception.
@@ -149,11 +121,11 @@ public class Protocol {
      */
     @CheckReturnValue
     public <T> Optional<T> get(final ThrowingSupplier<T, Throwable> attempt) {
-        return this.of(attempt).get();
+        return this.nullable(attempt).get();
     }
 
     /**
-     * Variant of {@link #of(ThrowingRunnable)} which executes the procedure
+     * Variant of {@link #suppress(ThrowingRunnable)} which executes the procedure
      * immediately and returns no output.
      *
      * @throws MissingProcedureException If a caught exception is undefined.

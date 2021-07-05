@@ -13,7 +13,8 @@ public class Test {
     public static void main(final String[] args) {
         // Maybe use a protocol?
         // Separately handle specific exceptions and nullability
-        final String result = Result.<String, IllegalArgumentException>nullable(() -> "Hello, World")
+        final String result = Result
+            .<String, IllegalArgumentException>nullable(() -> "Hello, World")
             .ifEmpty(() -> info("It was empty!"))
             .defaultIfEmpty(() -> "Output was null")
             .ifErr(e -> info("There was an error!"))
@@ -25,8 +26,8 @@ public class Test {
 
         final String r = Result
             .resolve(IllegalArgumentException.class, e -> "Bad argument")
-            .resolve(IllegalStateException.class, e -> "Ya done goofed")
-            .resolve(RuntimeException.class, e -> "Not sure what ya did")
+            .and(IllegalStateException.class, e -> "Ya done goofed")
+            .and(RuntimeException.class, e -> "Not sure what ya did")
             .expose(() -> "It worked!");
         try {
             testErrorHandling();
@@ -69,7 +70,7 @@ public class Test {
 
     private static void testValidProtocol() {
         Result.define(IOException.class, e -> { throw runEx("Wrong procedure implemented."); })
-            .define(IllegalAccessException.class, e -> info("Protocol implemented successfully."))
+            .and(IllegalAccessException.class, e -> info("Protocol implemented successfully."))
             .run(Test::throwsISE);
     }
 

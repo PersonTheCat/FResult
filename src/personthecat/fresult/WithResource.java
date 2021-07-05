@@ -158,30 +158,6 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
     }
 
     /**
-     * Optional syntactic variant of {@link #and(ThrowingSupplier)} with equivalent
-     * functionality.
-     *
-     * @param resource A function which either supplies the intended resource or
-     *                 throws an exception.
-     * @return A new wrapper containing getters for both resources.
-     */
-    public <R2 extends AutoCloseable> WithResources<R, R2, E> with(final ThrowingSupplier<R2, E> resource) {
-        return this.and(resource);
-    }
-
-    /**
-     * Optional syntactic variant of {@link #and(ThrowingFunction)} with equivalent
-     * functionality.
-     *
-     * @param getter A function which accepts the first resource, yields the
-     *               second, and may throw an exception.
-     * @return A new wrapper containing getters for both resources.
-     */
-    public <R2 extends AutoCloseable> WithResources<R, R2, E> with(final ThrowingFunction<R, R2, E> getter) {
-        return this.and(getter);
-    }
-
-    /**
      * Executes the underlying procedure being wrapped by this utility.
      *
      * @throws E If an error occurs.

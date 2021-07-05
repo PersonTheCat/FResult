@@ -49,17 +49,6 @@ public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E>
     Result<T, E> ifErr(final Consumer<E> f);
 
     /**
-     * Override providing a default behavior for all child types.
-     *
-     * @see PartialOptionalResult#get
-     * @return The underlying value, wrapped in {@link Optional}.
-     */
-    @CheckReturnValue
-    default Optional<T> get(final Consumer<E> f) {
-        return this.ifErr(f).get();
-    }
-
-    /**
      * Retrieves the underlying error, wrapped in Optional.
      *
      * @return The underlying error, wrapped in {@link Optional}.
@@ -144,16 +133,6 @@ public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E>
     Result.Value<T, Throwable> orElseTry(final Resolver<T> resolver, final ThrowingFunction<E, T, Throwable> f);
 
     /**
-     * Attempts to retrieve the underlying value, asserting that one must exist.
-     *
-     * @throws ResultUnwrapException Wraps the underlying error, if present.
-     * @return The underlying value.
-     */
-    default T unwrap() {
-        return this.expect("Attempted to unwrap a result with no value.");
-    }
-
-    /**
      * Attempts to retrieve the underlying error, asserting that one must exist.
      *
      * @throws ResultUnwrapException If no error is present to be unwrapped.
@@ -162,35 +141,6 @@ public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E>
     @CheckReturnValue
     default Throwable unwrapErr() {
         return this.expectErr("Attempted to unwrap a result with no error.");
-    }
-
-    /**
-     * Yields the underlying value, throwing a convenient, generic exception, if an
-     * error occurs.
-     *
-     * e.g.
-     * <pre>
-     *   // Runs an unsafe process, wrapping any original errors.
-     *   Object result = getResult()
-     *     .expect("Unable to get value from result.");
-     * </pre>
-     *
-     * @throws ResultUnwrapException Wraps the underlying error, if present.
-     * @param message The message to display in the event of an error.
-     * @return The underlying value.
-     */
-    T expect(final String message);
-
-    /**
-     * Formatted variant of {@link #expect}.
-     *
-     * @throws ResultUnwrapException Wraps the underlying error, if present.
-     * @param message The message to display in the event of an error.
-     * @param args A series of interpolated arguments (replacing <code>{}</code>).
-     * @return The underlying value
-     */
-    default T expectF(final String message, final Object... args) {
-        return this.expect(f(message, args));
     }
 
     /**

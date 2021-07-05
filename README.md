@@ -222,9 +222,9 @@ Methods that wish to return nullable Result types must return an instance of
 
 ```java
   // Output may still be null even if no exception is thrown.
-  public static OptionalResult<String, SQLException> getBook() {
+  public OptionalResult<String, SQLException> getBook() {
     try {
-      return Result.nullable(dao.getBook());
+      return Result.nullable(this.dao.getBook());
     } catch (final SQLSyntaxException e) {
       return Result.err(e);
     }
@@ -260,20 +260,105 @@ Here's how you can use these methods:
 
 ## Handling Multiple Error Types
 
+FResult provides a couple of companion utilities designed for handled multiple
+different types of exceptions individually. Let's explore these utilities and see
+how they can enable you to be very specific in handling errors.
+
+### Protocol
+
+We'll start by **defining** a `Protocol`, which contains a set of procedures for
+handling different errors.
+
+```java
+  final Protocol p = Result
+    .define(FileNotFoundException.class, Result::THROW) // Crash if not found
+    .and(SecurityException.class, Result::THROW) // Or if the program lacks permission.
+    .and(IOException.class, Result::WARN); // All other IO issues can be ignored.
+```
+
+This object can be used to spawn a new `Result` or can be stored somewhere and be
+passed into multiple `Result#orElseTry` handlers and be reused.
+
+```java
+  final Result<String, Throwable> r = Result
+    .define(FileNotFound.class, e -> log.warn("Error founnd: {}", e))
+    .and(RuntimeException.class, Result::THROW) // Exit thread.
+    .suppress(() -> readFile("myFile.txt"));
+```
+
+### Resolver
+
+FResult also provides a `Resolver<T>`, which contains a set of procedures for
+**resolving** different exceptions to explicit values. Its use is very similar to that
+of `Protocol`.
+
+```java
+  final String status s = Result
+    .resolve(FileNotFound.class, e -> "Couldn't find it!")
+    .and(RuntimeException.class, e -> "Something else went wrong!")
+    .suppress(() -> readFile("myFile.txt")) // A definite value is provided
+    .map(f -> "It worked!") // Always returned
+    .expose(); // Because this is Result$value, it may be exposed safely.
+```
+
 ## Using Result Imperatively
+
+FResult provides a complete set of concrete implementations representing different
+outcomes. If you prefer to use this type imperatively, you may check its type and
+cast it, allowing the underlying value or error to be exposed.
+
+```java
+  final Result<String, IOException> r = getResult();
+  if (r.isOk()) {
+    final String v = ((Value<String, IOException>) r).expose();
+  }
+```
+
+Note that casting `PartialResult` types is especially unsafe, as the result may not
+have been computed yet, and thus you should only rely on the output of `#ifErr`.
+
+```java
+  final Result<String, IOException> r = getPartialResult()
+    .ifErr(e -> log.warn("Error found: {}", e));
+  if (r.isErr()) {
+    final IOException e = ((Error<String, IOException>) r).expose();
+  }
+```
+
+A good rule of thumb: if you can't assign it to `Result` or `OptionalResult`, don't 
+use it.
 
 ## Other Factory Methods
 
+Finally, FResult also provides a couple of static factory methods for interacting
+with multiple known and partial results.
+
+```java
+  // Get a single Result<Void, E>
+  final Result<Void, Throwable> r1 = getFirstResult();
+  final Result<Void, Throwable> r2 = getSecondResult();
+  final Result<Void, Throwable> join = Result.join(r1, r2);
+
+  // Get a single Result<List<T>, E>
+  final Result<String, Throwable> r3 = getThirdResult();
+  final Result<String, Throwable> r4 = getFourthResult();
+  final Result<List<String>, Throwable> list = Result.collect(r3, r4);
+```
+
 ## Motivations and Cons
 
-Wrapping error-prone procedures in a functional interface has the modest
-benefit of being more expressive and easier to maintain. It gives callers a
-more convenient interface for supplying alternate values and reporting errors
-to the end-user. However, this comes at a cost. It is certainly less safe and
-less specific than vanilla error handling in Java, as it sometimes requires a
-bit of runtime reflection and only accepts one error parameter by default. It
-also requires a bit of memory overhead which likely has at least a minor
-impact on performance. Some may consider functional error handling to be more
-readable than imperative error handling, but this may not apply for most Java
-developers, as it strays from the standard conventions they're used to and is
-thus a bit of an outlier in that world. 
+Wrapping error-prone procedures in a functional interface is a lot more expressive and 
+can be much easier to maintain. It gives callers a more convenient interface for 
+supplying alternate values and reporting errors to the end-user. 
+
+However, this comes at a cost. 
+
+It is certainly less safe and less specific than vanilla error handling in Java, 
+as it sometimes requires a bit of runtime reflection and only accepts one error
+parameter by default. It also requires a bit of memory overhead which likely has 
+at least a minor impact on performance. For some, functional error handling may be
+a lot more readable than imperative error handling, but this may not apply for most 
+Java developers, as it strays from the standard conventions they're used to. 
+
+As a result, this project is ideal for  frameworks and new projects seeking to explore
+novel design strategies.

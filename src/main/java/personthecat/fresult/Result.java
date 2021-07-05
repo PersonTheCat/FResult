@@ -1339,17 +1339,13 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
             }
         }
 
-        /**
-         * @deprecated Always returns other.
-         */
         @Override
-        @Deprecated
         public <M> Value<M, E> map(final Function<T, M> f) {
             return new Value<>(f.apply(this.value));
         }
 
         /**
-         * @deprecated Always returns other.
+         * @deprecated Always returns this.
          */
         @Override
         @Deprecated
@@ -1358,20 +1354,12 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
             return (Value<T, E2>) this;
         }
 
-        /**
-         * @deprecated Always returns other.
-         */
         @Override
-        @Deprecated
         public <M> Result<M, E> flatMap(final ResultFunction<T, M, E> f) {
             return f.apply(this.value);
         }
 
-        /**
-         * @deprecated Always returns other.
-         */
         @Override
-        @Deprecated
         public <M> OptionalResult<M, E> flatMap(final OptionalResultFunction<T, M, E> f) {
             return f.apply(this.value);
         }

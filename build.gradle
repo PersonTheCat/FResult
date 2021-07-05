@@ -1,8 +1,8 @@
 apply plugin: 'java'
 
-version = '2.0-BETA'
+version = '2.0-BETA-1'
 group = 'PersonTheCat'
-description = 'An experimental library providing functional error handling in Java.'
+description = 'A unified type for optional and error-prone procedures in Java.'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8

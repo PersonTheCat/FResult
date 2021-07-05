@@ -463,16 +463,34 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
     }
 
     /**
-     * Creates a new protocol for handling the specified error type. Can be chained
-     * with additional definitions to handle multiple different error types as needed.
+     * Creates a new {@link Protocol} for handling the specified error type. Can be
+     * chained with additional definitions to handle multiple different error types,
+     * as needed.
      *
      * @param clazz The class of error to be handled by this definition.
-     * @param func  The function used for handling this kind of error.
+     * @param f     The function used for handling this kind of error.
+     * @param <E>   The type of error being handled by this procedure.
      * @return A new {@link Protocol} for handling the specified error type.
      */
     @CheckReturnValue
-    static <E extends Exception> Protocol define(final Class<E> clazz, final Consumer<E> func) {
-        return new Protocol().define(clazz, func);
+    static <E extends Throwable> Protocol define(final Class<E> clazz, final Consumer<E> f) {
+        return new Protocol().define(clazz, f);
+    }
+
+    /**
+     * Creates a new {@link Resolver} for handling the specified error type. Can be
+     * chained with additional definitions to handled multiple different error types,
+     * as needed.
+     *
+     * @param clazz The class of error to be handled by this definition.
+     * @param f     The function used for handling this kind of error.
+     * @param <T>   The type of value being wrapped by this handler.
+     * @param <E>   The type of error being handled by this procedure.
+     * @return A new {@link Protocol} for handling the specified error type.
+     */
+    @CheckReturnValue
+    static <T, E extends Throwable> Resolver<T> resolve(final Class<E> clazz, final Function<E, T> f) {
+        return new Resolver<T>().resolve(clazz, f);
     }
 
     /**

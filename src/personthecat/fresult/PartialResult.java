@@ -84,7 +84,7 @@ public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E>
      *
      * <p>e.g.</p>
      * <pre>
-     *   final String value = Result.of(() -> "Hello, world!")
+     *   final String value = Result.suppress(() -> "Hello, world!")
      *     .resolve(e -> "Default value")
      *     .expose(); // No consequences.
      * </pre>

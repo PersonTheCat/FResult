@@ -22,6 +22,12 @@ public class Protocol {
     private final Set<Procedure<? extends Throwable>> procedures = new HashSet<>();
 
     /**
+     * Indicates that this type may not be instantiated from an external
+     * package and is effectively sealed.
+     */
+    Protocol() {}
+
+    /**
      * Defines a new procedure for handling a specific type of error.
      *
      * @param type The type of error being handled.
@@ -29,7 +35,7 @@ public class Protocol {
      * @return The current Protocol which now contains the procedure.
      */
     @CheckReturnValue
-    public <E extends Throwable> Protocol define(final Class<E> type, Consumer<E> func) {
+    public <E extends Throwable> Protocol define(final Class<E> type, final Consumer<E> func) {
         this.procedures.add(new Procedure<>(type, func));
         return this;
     }
@@ -135,11 +141,10 @@ public class Protocol {
     }
 
     /**
-     * Variant of {@link #of(ThrowingSupplier)} which returns the value
-     * directly, wrapped in {@link Optional}.
+     * Variant of {@link #of(ThrowingSupplier)} which returns the value directly,
+     * wrapped in {@link Optional}.
      *
-     * @param attempt A function which either yields a value or throws an
-     *                exception.
+     * @param attempt A function which either yields a value or throws an exception.
      * @return The value yielded by the operation, wrapped in {@link Optional}.
      */
     @CheckReturnValue
@@ -152,8 +157,7 @@ public class Protocol {
      * immediately and returns no output.
      *
      * @throws MissingProcedureException If a caught exception is undefined.
-     * @param attempt A function which either yields a value or throws an
-     *                exception.
+     * @param attempt A function which either yields a value or throws an exception.
      */
     public void run(final ThrowingRunnable<Throwable> attempt) {
         try {
@@ -170,7 +174,7 @@ public class Protocol {
      * is implemented.
      */
     private boolean tryHandle(final Throwable e) {
-        return procedures.stream().anyMatch(proc -> {
+        return this.procedures.stream().anyMatch(proc -> {
             if (proc.clazz.isInstance(e)) {
                 proc.func.accept(cast(e));
                 return true;

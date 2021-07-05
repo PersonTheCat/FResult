@@ -12,6 +12,7 @@ import personthecat.fresult.functions.ThrowingFunction;
 import personthecat.fresult.functions.ThrowingSupplier;
 
 import javax.annotation.CheckReturnValue;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -98,7 +99,7 @@ import static personthecat.fresult.Shorthand.wrongErrorFound;
  * @author PersonTheCat
  */
 @SuppressWarnings("unused")
-public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
+public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Serializable {
 
     /**
      * Accepts an error and ignores it, while still coercing it to its lowest type, thus
@@ -961,6 +962,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
     class Value<T, E extends Throwable> implements PartialResult<T, E>, Result<T, E>, OptionalResult<T, E> {
 
         private static final Value<Void, ?> OK = new Value<>(Void.INSTANCE);
+        private static final long serialVersionUID = 2L;
 
         private final T value;
 
@@ -1355,6 +1357,8 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
      * @param <E> The type of error being wrapped
      */
     class Error<T, E extends Throwable> implements Result<T, E>, OptionalResult<T, E> {
+
+        private static final long serialVersionUID = 2L;
 
         private final E error;
 
@@ -1751,6 +1755,8 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
      */
     class Empty<T, E extends Throwable> implements OptionalResult<T, E>, PartialOptionalResult<T, E> {
 
+        private static final long serialVersionUID = 2L;
+
         static final Empty<?, ?> INSTANCE = new Empty<>();
 
         private Empty() {}
@@ -2102,8 +2108,9 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public Optional<Throwable> getAnyErr() {
-            return this.execute().getErr().map(Function.identity());
+            return (Optional<Throwable>) this.execute().getErr();
         }
 
         @Override
@@ -2254,8 +2261,9 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public Optional<Throwable> getAnyErr() {
-            return this.execute().getErr().map(Function.identity());
+            return (Optional<Throwable>) this.execute().getErr();
         }
 
         @Override

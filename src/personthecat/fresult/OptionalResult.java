@@ -7,6 +7,7 @@ import personthecat.fresult.functions.ThrowingFunction;
 import personthecat.fresult.functions.ThrowingSupplier;
 
 import javax.annotation.CheckReturnValue;
+import java.io.Serializable;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -16,7 +17,7 @@ import java.util.function.Supplier;
 import static personthecat.fresult.Shorthand.f;
 
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E> {
+public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E>, Serializable {
 
     /**
      * Consumes instructions for what to do if a given result contains no value. This

@@ -9,12 +9,12 @@ neatly handling errors. You can suppress all errors and immediately get a value:
     .expect("That didn't work!");
 ```
 
-Or, be as specific as you like:
+Or, be extremely specific:
 
 ```java
   final String s = Result.resolve(FileNotFoundException.class, e -> "")
-    .resolve(IllegalArgumentException.class, Result::THROW)
-    .resolve(IOException.class, Result::WARN)
+    .and(IllegalArgumentException.class, Result::THROW)
+    .and(IOException.class, Result::WARN)
     .suppressNullable(() -> readFile("myFile.txt"))
     .ifEmpty(() -> log.warn("File was empty!"))
     .ifErr(e -> log.warn("Couldn't read file!"))
@@ -254,7 +254,7 @@ Here's how you can use these methods:
   final String book = Result
     .with(() -> new FileReader("book.txt"))
     .and(SecondResource::new) // Either a supplier or a function
-    .suppress(reader -> { /* read file */)
+    .suppress(reader -> { /* read file */ })
     .orElseGet(e -> "");
 ```
 

@@ -94,47 +94,47 @@ class WithResources<R1 extends AutoCloseable, R2 extends AutoCloseable, E extend
      * @param <E2> The type of error being consumed by the wrapper.
      * @return A result which may either be a value or an <b>any</b> error.
      */
-    public <T, E2 extends E> Result<T, Throwable> any(final ThrowingBiFunction<R1, R2, T, E2> attempt) {
-        return Result.any(() -> this.execute(attempt));
+    public <T, E2 extends E> Result<T, Throwable> suppress(final ThrowingBiFunction<R1, R2, T, E2> attempt) {
+        return Result.suppress(() -> this.execute(attempt));
     }
 
     /**
      * Variant of {@link #of(ThrowingBiFunction)} which implies that the type of exception
      * being thrown is not significant.
      *
-     * @see WithResources#any(ThrowingBiFunction)
+     * @see WithResources#suppress(ThrowingBiFunction)
      * @param attempt A function which consumes both values and may throw an exception.
      * @param <E2> The type of error being consumed by the wrapper.
      * @return A result which may either be OK or <b>any</b> error.
      */
-    public <E2 extends E> Result<Void, Throwable> any(final ThrowingBiConsumer<R1, R2, E2> attempt) {
-        return this.any(Result.wrapVoid(attempt));
+    public <E2 extends E> Result<Void, Throwable> suppress(final ThrowingBiConsumer<R1, R2, E2> attempt) {
+        return this.suppress(Result.wrapVoid(attempt));
     }
 
     /**
      * Variant of {@link #of(ThrowingFunction)} which implies that the type of exception
      * being thrown is not significant.
      *
-     * @see WithResources#any(ThrowingBiFunction)
+     * @see WithResources#suppress(ThrowingBiFunction)
      * @param <T> The type of value being consumed by the wrapper.
      * @param <E2> The type of error being consumed by the wrapper.
      * @return A result which may either be a value or <b>any</b> error.
      */
-    public <T, E2 extends E> Result<T, Throwable> any(final ThrowingFunction<R2, T, E2> attempt) {
-        return this.any((R1 r1, R2 r2) -> attempt.apply(r2));
+    public <T, E2 extends E> Result<T, Throwable> suppress(final ThrowingFunction<R2, T, E2> attempt) {
+        return this.suppress((R1 r1, R2 r2) -> attempt.apply(r2));
     }
 
     /**
      * Variant of {@link #of(ThrowingConsumer)} which implies that the type of exception
      * being thrown is not significant.
      *
-     * @see WithResources#any(ThrowingBiFunction)
+     * @see WithResources#suppress(ThrowingBiFunction)
      * @param attempt A function which consumes the second value and may throw an exception.
      * @param <E2> The type of error being consumed by the wrapper.
      * @return A result which may either OK or an error.
      */
-    public <E2 extends E> Result<Void, Throwable> any(final ThrowingConsumer<R2, E2> attempt) {
-        return this.any((r1, r2) -> { attempt.accept(r2); });
+    public <E2 extends E> Result<Void, Throwable> suppress(final ThrowingConsumer<R2, E2> attempt) {
+        return this.suppress((r1, r2) -> { attempt.accept(r2); });
     }
 
     /**
@@ -175,8 +175,8 @@ class WithResources<R1 extends AutoCloseable, R2 extends AutoCloseable, E extend
      * @param <E2> The type of error being consumed by the wrapper.
      * @return A result which may either be a value, <b>any</b> error, or null.
      */
-    public <T, E2 extends E> OptionalResult<T, Throwable> anyNullable(final ThrowingBiFunction<R1, R2, T, E2> attempt) {
-        return Result.anyNullable(() -> this.execute(attempt));
+    public <T, E2 extends E> OptionalResult<T, Throwable> suppressNullable(final ThrowingBiFunction<R1, R2, T, E2> attempt) {
+        return Result.suppressNullable(() -> this.execute(attempt));
     }
 
     /**
@@ -189,8 +189,8 @@ class WithResources<R1 extends AutoCloseable, R2 extends AutoCloseable, E extend
      * @param <E2> The type of error being consumed by the wrapper.
      * @return A result which may either be a value, <b>any</b> error, or null.
      */
-    public <T, E2 extends E> OptionalResult<T, Throwable> anyNullable(final ThrowingFunction<R2, T, E2> attempt) {
-        return this.anyNullable((R1 r1, R2 r2) -> attempt.apply(r2));
+    public <T, E2 extends E> OptionalResult<T, Throwable> suppressNullable(final ThrowingFunction<R2, T, E2> attempt) {
+        return this.suppressNullable((R1 r1, R2 r2) -> attempt.apply(r2));
     }
 
     /**
@@ -233,8 +233,8 @@ class WithResources<R1 extends AutoCloseable, R2 extends AutoCloseable, E extend
      * @param <E2> The type of error being consumed by the wrapper.
      * @return A result which may either be a value, <b>any</b> error, or null.
      */
-    public <T, E2 extends E> Result<Optional<T>, Throwable> anyWrappingOptional(final ThrowingBiFunction<R1, R2, T, E2> attempt) {
-        return Result.anyWrappingOptional(() -> this.execute(attempt));
+    public <T, E2 extends E> Result<Optional<T>, Throwable> suppressWrappingOptional(final ThrowingBiFunction<R1, R2, T, E2> attempt) {
+        return Result.suppressWrappingOptional(() -> this.execute(attempt));
     }
 
     /**
@@ -248,8 +248,8 @@ class WithResources<R1 extends AutoCloseable, R2 extends AutoCloseable, E extend
      * @param <E2> The type of error being consumed by the wrapper.
      * @return A result which may either be a value, <b>any</b> error, or null.
      */
-    public <T, E2 extends E> Result<Optional<T>, Throwable> anyWrappingOptional(final ThrowingFunction<R2, T, E2> attempt) {
-        return this.anyWrappingOptional((R1 r1, R2 r2) -> attempt.apply(r2));
+    public <T, E2 extends E> Result<Optional<T>, Throwable> suppressWrappingOptional(final ThrowingFunction<R2, T, E2> attempt) {
+        return this.suppressWrappingOptional((R1 r1, R2 r2) -> attempt.apply(r2));
     }
 
     /**

@@ -61,22 +61,22 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
      * @param <E2> The type of exception thrown by the resource getter.
      * @return A result which may either be a value or <b>any</b> error.
      */
-    public <T, E2 extends E> Result<T, Throwable> any(final ThrowingFunction<R, T, E2> attempt) {
-        return Result.any(() -> this.execute(attempt));
+    public <T, E2 extends E> Result<T, Throwable> suppress(final ThrowingFunction<R, T, E2> attempt) {
+        return Result.suppress(() -> this.execute(attempt));
     }
 
     /**
      * Variant of {@link #of(ThrowingConsumer)} which implies that the type
      * of exception being thrown is not significant.
      *
-     * @see WithResource#any(ThrowingFunction)
+     * @see WithResource#suppress(ThrowingFunction)
      * @param attempt A function which consumes the resource any either returns a
      *                value or throws <b>any</b> type of exception.
      * @param <E2> The type of exception thrown by the resource getter.
      * @return A result which may either be a value or <b>any</b> error.
      */
-    public <E2 extends E> Result<Void, Throwable> any(final ThrowingConsumer<R, E2> attempt) {
-        return this.any(Result.wrapVoid(attempt));
+    public <E2 extends E> Result<Void, Throwable> suppress(final ThrowingConsumer<R, E2> attempt) {
+        return this.suppress(Result.wrapVoid(attempt));
     }
 
     /**
@@ -102,8 +102,8 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
      * @param <E2> The type of exception thrown by the resource getter.
      * @return A result which may either be a value, <b>any</b> error, or null.
      */
-    public <T, E2 extends E> OptionalResult<T, Throwable> anyNullable(final ThrowingFunction<R, T, E2> attempt) {
-        return Result.anyNullable(() -> execute(attempt));
+    public <T, E2 extends E> OptionalResult<T, Throwable> suppressNullable(final ThrowingFunction<R, T, E2> attempt) {
+        return Result.suppressNullable(() -> execute(attempt));
     }
 
     /**
@@ -131,8 +131,8 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
      * @param <E2> The type of exception thrown by the resource getter.
      * @return A result which may either be an optional value or <b>any</b> error.
      */
-    public <T, E2 extends E> Result<Optional<T>, Throwable> anyWrappingOptional(final ThrowingFunction<R, T, E2> attempt) {
-        return Result.anyWrappingOptional(() -> execute(attempt));
+    public <T, E2 extends E> Result<Optional<T>, Throwable> suppressWrappingOptional(final ThrowingFunction<R, T, E2> attempt) {
+        return Result.suppressWrappingOptional(() -> execute(attempt));
     }
 
     /**

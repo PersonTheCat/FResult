@@ -245,7 +245,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @return A result which may either a value or any kind of exception.
      */
     @CheckReturnValue
-    static <T> Result<T, Throwable> any(final ThrowingSupplier<T, Throwable> attempt) {
+    static <T> Result<T, Throwable> suppress(final ThrowingSupplier<T, Throwable> attempt) {
         try {
             return ok(attempt.get());
         } catch (Throwable t) {
@@ -257,12 +257,12 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * Constructs a result from an operation which may throw <b>any exception</b> and not return
      * a value.
      *
-     * @see Result#any(ThrowingSupplier)
+     * @see Result#suppress(ThrowingSupplier)
      * @param attempt An expression which does not yield a value, but may err.
      * @return A result which may either be OK or any kind of exception.
      */
     @CheckReturnValue
-    static Result<Void, Throwable> any(final ThrowingRunnable<Throwable> attempt) {
+    static Result<Void, Throwable> suppress(final ThrowingRunnable<Throwable> attempt) {
         try {
             attempt.run();
             return ok();
@@ -319,7 +319,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
     }
 
     /**
-     * Variant of {@link Result#any} which is allowed to contain null values.
+     * Variant of {@link Result#suppress} which is allowed to contain null values.
      *
      * @see Result#nullable
      * @param attempt An expression which either yields a value, throws <b>any</b> error,
@@ -327,7 +327,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param <T> The type of value being consumed by the wrapper.
      * @return A result which may either be a value, <b>any</b> error, or null.
      */
-    static <T> OptionalResult<T, Throwable> anyNullable(final ThrowingSupplier<T, Throwable> attempt) {
+    static <T> OptionalResult<T, Throwable> suppressNullable(final ThrowingSupplier<T, Throwable> attempt) {
         try {
             return nullable(attempt.get());
         } catch (Throwable t) {
@@ -372,14 +372,14 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
     }
 
     /**
-     * Variant of {@link Result#any} which wraps the output value in {@link Optional}.
+     * Variant of {@link Result#suppress} which wraps the output value in {@link Optional}.
      *
      * @param attempt An expression which either yields a value, throws <b>any</b>
      *                exception, or returns null.
      * @param <T> The type of value being consumed by the wrapper.
      * @return A result which may either be an optional value or <b>any</b> error.
      */
-    static <T> Result<Optional<T>, Throwable> anyWrappingOptional(final ThrowingSupplier<T, Throwable> attempt) {
+    static <T> Result<Optional<T>, Throwable> suppressWrappingOptional(final ThrowingSupplier<T, Throwable> attempt) {
         try {
             return ok(Optional.ofNullable(attempt.get()));
         } catch (Throwable t) {
@@ -875,6 +875,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param <M> The new type of value being consumed by the wrapper.
      * @return A new result containing the output of this function, or else this.
      */
+    @CheckReturnValue
     <M> Result<M, E> andThen(final Function<T, M> f);
 
     /**
@@ -892,6 +893,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param <M> The new type of value being consumed by the wrapper.
      * @return A new result containing the output of this function, or else this.
      */
+    @CheckReturnValue
     <M> PartialResult<M, E> andThenTry(final ThrowingFunction<T, M, E> attempt);
 
     /**
@@ -902,6 +904,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param <M> The new type of value being consumed by the wrapper.
      * @return A new result containing the output of this function, or else this.
      */
+    @CheckReturnValue
     <M> Result<M, Throwable> andThenSuppress(final ThrowingFunction<T, M, Throwable> attempt);
 
     /**
@@ -919,6 +922,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param attempt The next procedure to attempt, if OK.
      * @return A new result containing the output of this function, or else this.
      */
+    @CheckReturnValue
     PartialResult<Void, E> andThenTry(final ThrowingRunnable<E> attempt);
 
     /**
@@ -928,6 +932,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param attempt The next procedure to attempt, if OK.
      * @return A new result containing the output of this function, or else this.
      */
+    @CheckReturnValue
     Result<Void, Throwable> andThenSuppress(final ThrowingRunnable<Throwable> attempt);
 
     /**
@@ -1414,7 +1419,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         @Override
         @Deprecated
         public <M> Result<M, Throwable> andThenSuppress(final ThrowingFunction<T, M, Throwable> attempt) {
-            return Result.any(() -> attempt.apply(this.value));
+            return Result.suppress(() -> attempt.apply(this.value));
         }
 
         /**
@@ -1442,7 +1447,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         @Override
         @Deprecated
         public Result<Void, Throwable> andThenSuppress(final ThrowingRunnable<Throwable> attempt) {
-            return Result.any(attempt);
+            return Result.suppress(attempt);
         }
 
         /**

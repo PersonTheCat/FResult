@@ -82,7 +82,7 @@ public class Protocol {
      * @return The result of the operation.
      */
     @CheckReturnValue
-    public <T> Result<T, Throwable> any(final ThrowingSupplier<T, Throwable> attempt) {
+    public <T> Result<T, Throwable> suppress(final ThrowingSupplier<T, Throwable> attempt) {
         return this.of(attempt);
     }
 
@@ -95,7 +95,7 @@ public class Protocol {
      * @return The result of the operation.
      */
     @CheckReturnValue
-    public Result<Void, Throwable> any(final ThrowingRunnable<Throwable> attempt) {
+    public Result<Void, Throwable> suppress(final ThrowingRunnable<Throwable> attempt) {
         return this.of(attempt);
     }
 

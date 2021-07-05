@@ -863,6 +863,74 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
     OptionalResult<T, E> filterErr(final Predicate<E> f);
 
     /**
+     * Consumes an event to run in the event of success in this wrapper.
+     *
+     * <p>e.g.</p>
+     * <pre>
+     *   Result.any(() -> "Hello, world!") // Result is OK
+     *     .andThen(System.out::println); // Result is printed.
+     * </pre>
+     *
+     * @param f The event to run, if OK.
+     * @param <M> The new type of value being consumed by the wrapper.
+     * @return A new result containing the output of this function, or else this.
+     */
+    <M> Result<M, E> andThen(final Function<T, M> f);
+
+    /**
+     * Variant of {@link #andThen(Function)} which may fail. <b>Any error returned by this
+     * event must be acknowledged</b>.
+     *
+     * <p>e.g.</p>
+     * <pre>
+     *   Result.any(() -> "Hello, world!) // Result is OK
+     *     .andThenTry(s -> throwException()) // Result is not OK
+     *     .ifErr(Result::WARN); // This problem will be logged.
+     * </pre>
+     *
+     * @param attempt The next procedure to attempt, if OK.
+     * @param <M> The new type of value being consumed by the wrapper.
+     * @return A new result containing the output of this function, or else this.
+     */
+    <M> PartialResult<M, E> andThenTry(final ThrowingFunction<T, M, E> attempt);
+
+    /**
+     * Variant of {@link #andThenTry} which is allowed to throw <b>any</b> exception.
+     * Returns a less restrictive wrapper.
+     *
+     * @param attempt The next procedure to attempt, if OK.
+     * @param <M> The new type of value being consumed by the wrapper.
+     * @return A new result containing the output of this function, or else this.
+     */
+    <M> Result<M, Throwable> andThenSuppress(final ThrowingFunction<T, M, Throwable> attempt);
+
+    /**
+     * Variant of {@link #andThen(Function)} which ignores the value in the wrapper.
+     *
+     * @param f The event to run, if OK.
+     * @return A new result containing the output of this function, or else this.
+     */
+    Result<Void, E> andThen(final Runnable f);
+
+    /**
+     * Variant of {@link #andThenTry(ThrowingFunction)} which ignores the value in
+     * the wrapper.
+     *
+     * @param attempt The next procedure to attempt, if OK.
+     * @return A new result containing the output of this function, or else this.
+     */
+    PartialResult<Void, E> andThenTry(final ThrowingRunnable<E> attempt);
+
+    /**
+     * Variant of {@link #andThenSuppress(ThrowingFunction)} which ignores the value
+     * in the wrapper.
+     *
+     * @param attempt The next procedure to attempt, if OK.
+     * @return A new result containing the output of this function, or else this.
+     */
+    Result<Void, Throwable> andThenSuppress(final ThrowingRunnable<Throwable> attempt);
+
+    /**
      * Attempts to retrieve the underlying value, asserting that one must exist.
      *
      * @throws ResultUnwrapException Wraps the underlying error, if present.
@@ -1323,6 +1391,61 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         }
 
         /**
+         * @deprecated Always runs function.
+         */
+        @Override
+        @Deprecated
+        public <M> Value<M, E> andThen(final Function<T, M> f) {
+            return Result.ok(f.apply(this.value));
+        }
+
+        /**
+         * @deprecated Always runs function.
+         */
+        @Override
+        @Deprecated
+        public PartialResult<Void, E> andThenTry(final ThrowingRunnable<E> attempt) {
+            return Result.of(attempt);
+        }
+
+        /**
+         * @deprecated Always runs function.
+         */
+        @Override
+        @Deprecated
+        public <M> Result<M, Throwable> andThenSuppress(final ThrowingFunction<T, M, Throwable> attempt) {
+            return Result.any(() -> attempt.apply(this.value));
+        }
+
+        /**
+         * @deprecated Always runs function.
+         */
+        @Override
+        @Deprecated
+        public Value<Void, E> andThen(final Runnable f) {
+            f.run();
+            return Result.ok();
+        }
+
+        /**
+         * @deprecated Always runs function.
+         */
+        @Override
+        @Deprecated
+        public <M> PartialResult<M, E> andThenTry(final ThrowingFunction<T, M, E> attempt) {
+            return Result.of(() -> attempt.apply(this.value));
+        }
+
+        /**
+         * @deprecated Always runs function.
+         */
+        @Override
+        @Deprecated
+        public Result<Void, Throwable> andThenSuppress(final ThrowingRunnable<Throwable> attempt) {
+            return Result.any(attempt);
+        }
+
+        /**
          * @deprecated Call {@link Value#expose} instead.
          */
         @Override
@@ -1356,7 +1479,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param <T> A dummy parameter for the call site
      * @param <E> The type of error being wrapped
      */
-    class Error<T, E extends Throwable> implements Result<T, E>, OptionalResult<T, E> {
+    class Error<T, E extends Throwable> implements PartialResult<T, E>, Result<T, E>, OptionalResult<T, E> {
 
         private static final long serialVersionUID = 2L;
 
@@ -1413,6 +1536,27 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         }
 
         /**
+         * @deprecated Unnecessary check.
+         */
+        @Override
+        @Deprecated
+        public boolean isErr(Class<? super E> clazz) {
+            if (!clazz.isInstance(this.error)) {
+                throw wrongErrorFound(this.error);
+            }
+            return true;
+        }
+
+        /**
+         * @deprecated Always returns true.
+         */
+        @Override
+        @Deprecated
+        public boolean isAnyErr() {
+            return true;
+        }
+
+        /**
          * @deprecated Always an error.
          */
         @Override
@@ -1451,6 +1595,15 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         @Deprecated
         public Optional<T> get(final Consumer<E> func) {
             return Optional.empty();
+        }
+
+        /**
+         * @deprecated Use {@link Error#expose}.
+         */
+        @Override
+        @Deprecated
+        public Optional<Throwable> getAnyErr() {
+            return Optional.of(this.error);
         }
 
         /**
@@ -1719,6 +1872,66 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         }
 
         /**
+         * @deprecated Never runs function.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("unchecked")
+        public <M> Error<M, E> andThen(final Function<T, M> f) {
+            return (Error<M, E>) this;
+        }
+
+        /**
+         * @deprecated Never runs function.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("unchecked")
+        public <M> Error<M, E> andThenTry(final ThrowingFunction<T, M, E> attempt) {
+            return (Error<M, E>) this;
+        }
+
+        /**
+         * @deprecated Never runs function.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("unchecked")
+        public <M> Error<M, Throwable> andThenSuppress(final ThrowingFunction<T, M, Throwable> attempt) {
+            return (Error<M, Throwable>) this;
+        }
+
+        /**
+         * @deprecated Never runs function.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("unchecked")
+        public Error<Void, E> andThen(final Runnable f) {
+            return (Error<Void, E>) this;
+        }
+
+        /**
+         * @deprecated Never runs function.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("unchecked")
+        public Error<Void, Throwable> andThenSuppress(final ThrowingRunnable<Throwable> attempt) {
+            return (Error<Void, Throwable>) this;
+        }
+
+        /**
+         * @deprecated Never runs function.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("unchecked")
+        public Error<Void, E> andThenTry(final ThrowingRunnable<E> attempt) {
+            return (Error<Void, E>) this;
+        }
+
+        /**
          * @deprecated Always fails.
          */
         @Override
@@ -1831,13 +2044,13 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         }
 
         /**
-         * @deprecated Always returns true.
+         * @deprecated Always returns false.
          */
         @Override
         @Deprecated
         @CheckReturnValue
         public boolean isAnyErr() {
-            return true;
+            return false;
         }
 
         /**

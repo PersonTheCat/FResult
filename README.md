@@ -246,7 +246,7 @@ Here's how you can use these methods:
     .orElseGet(e -> ""); // Handle errors
   
   // Use a single resource in one method
-  final String book = Result.with(() -> new FileReader("book.txt), reader -> {
+  final String book = Result.with(() -> new FileReader("book.txt"), reader -> {
     // read file
   }).orElseGet(e -> "");
   

@@ -2,6 +2,8 @@ package personthecat.fresult;
 
 import personthecat.fresult.exception.ResultUnwrapException;
 import personthecat.fresult.exception.WrongErrorException;
+import personthecat.fresult.functions.OptionalResultFunction;
+import personthecat.fresult.functions.ResultFunction;
 import personthecat.fresult.functions.ThrowingFunction;
 import personthecat.fresult.functions.ThrowingSupplier;
 
@@ -184,6 +186,54 @@ public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E
      */
     @CheckReturnValue
     Result<T, Throwable> orElseTry(final Protocol protocol, final ThrowingSupplier<T, Throwable> f);
+
+    /**
+     * Replaces the underlying value with the result of func.apply(). Use this
+     * whenever you need to map a potential value to a different value.
+     *
+     * <p>e.g.</p>
+     * <pre>
+     *   final int secretArrayLength = Result.of(() -> getSecretArray())
+     *      .get(e -> {...}) // Handle any errors.
+     *      .map(array -> array.length) // Return the length instead.
+     *      .orElse(0); // Didn't work. Call Optional#orElse().
+     * </pre>
+     *
+     * @param f The mapper applied to the value.
+     * @return A new Result with its value mapped.
+     */
+    @CheckReturnValue
+    <M> OptionalResult<M, E> map(final Function<T, M> f);
+
+    /**
+     * Replaces the underlying error with the result of func.apply(). Use this
+     * whenever you need to map a potential error to another error.
+     *
+     * @param f The mapper applied to the error.
+     * @return A new Result with its error mapped.
+     */
+    @CheckReturnValue
+    <E2 extends Throwable> OptionalResult<T, E2> mapErr(final Function<E, E2> f);
+    /**
+     * Replaces the entire value with a new result, if present. Use this whenever
+     * you need to map a potential value to another function which yields a Result.
+     *
+     * @param f A function which yields a new Result wrapper if a value is present.
+     * @return The new function yielded, if a value is present, else this.
+     */
+    @CheckReturnValue
+    <M> OptionalResult<M, E> flatMap(final OptionalResultFunction<T, M, E> f);
+
+    /**
+     * Replaces the entire value with a new result, if present. Use this whenever
+     * you need to map a potential error to another function which yields a Result.
+     *
+     * @param f A function which yields a new Result wrapper if an error is present.
+     * @return The new function yielded, if an error is present, or else a complete
+     *         {@link Result}.
+     */
+    @CheckReturnValue
+    <E2 extends Throwable> OptionalResult<T, E2> flatMapErr(final OptionalResultFunction<E, T, E2> f);
 
     /**
      * Attempts to retrieve the underlying value, asserting that one must exist.

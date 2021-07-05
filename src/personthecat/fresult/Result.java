@@ -2,6 +2,8 @@ package personthecat.fresult;
 
 import personthecat.fresult.exception.ResultUnwrapException;
 import personthecat.fresult.exception.WrongErrorException;
+import personthecat.fresult.functions.OptionalResultFunction;
+import personthecat.fresult.functions.ResultFunction;
 import personthecat.fresult.functions.ThrowingRunnable;
 import personthecat.fresult.functions.ThrowingBiConsumer;
 import personthecat.fresult.functions.ThrowingBiFunction;
@@ -757,9 +759,8 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
     <U> Optional<Result<U, E>> transpose();
 
     /**
-     * Replaces the underlying value with the result of func.apply().
-     * Use this whenever you need to map a potential value to a
-     * different value.
+     * Replaces the underlying value with the result of func.apply(). Use this
+     * whenever you need to map a potential value to a different value.
      *
      * <p>e.g.</p>
      * <pre>
@@ -776,9 +777,8 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
     <M> Result<M, E> map(final Function<T, M> f);
 
     /**
-     * Replaces the underlying error with the result of func.apply().
-     * Use this whenever you need to map a potential error to another
-     * error.
+     * Replaces the underlying error with the result of func.apply(). Use this
+     * whenever you need to map a potential error to another error.
      *
      * @param f The mapper applied to the error.
      * @return A new Result with its error mapped.
@@ -787,30 +787,44 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
     <E2 extends Throwable> Result<T, E2> mapErr(final Function<E, E2> f);
 
     /**
-     * Replaces the entire value with a new result, if present.
-     * Use this whenever you need to map a potential value to
-     * another function which yields a Result.
+     * Replaces the entire value with a new result, if present. Use this whenever
+     * you need to map a potential value to another function which yields a Result.
      *
-     * @param f A function which yields a new Result wrapper
-     *             if a value is present.
-     * @return The new function yielded, if a value is present,
-     *         else this.
+     * @param f A function which yields a new Result wrapper if a value is present.
+     * @return The new function yielded, if a value is present, else this.
      */
     @CheckReturnValue
-    Result<T, E> flatMap(final Function<T, Result<T, E>> f);
+    <M> Result<M, E> flatMap(final ResultFunction<T, M, E> f);
 
     /**
-     * Replaces the entire value with a new result, if present.
-     * Use this whenever you need to map a potential error to
-     * another function which yields a Result.
+     * Variant of {@link #flatMap(ResultFunction)} which yields an {@link OptionalResult}.
      *
-     * @param f A function which yields a new Result wrapper
-     *             if an error is present.
-     * @return The new function yielded, if an error is present,
-     *         or else a complete {@link Result}.
+     * @param f A function which yields a new Result wrapper if a value is present.
+     * @return The new function yielded, if a value is present, else this.
      */
     @CheckReturnValue
-    Result<T, E> flatMapErr(final Function<E, Result<T, E>> f);
+    <M> OptionalResult<M, E> flatMap(final OptionalResultFunction<T, M, E> f);
+
+    /**
+     * Replaces the entire value with a new result, if present. Use this whenever
+     * you need to map a potential error to another function which yields a Result.
+     *
+     * @param f A function which yields a new Result wrapper if an error is present.
+     * @return The new function yielded, if an error is present, or else a complete
+     *         {@link Result}.
+     */
+    @CheckReturnValue
+    <E2 extends Throwable> Result<T, E2> flatMapErr(final ResultFunction<E, T, E2> f);
+
+    /**
+     * Variant of {@link #flatMapErr(ResultFunction)} which yields an {@link OptionalResult}.
+     *
+     * @param f A function which yields a new Result wrapper if an error is present.
+     * @return The new function yielded, if an error is present, or else a complete
+     *         {@link Result}.
+     */
+    @CheckReturnValue
+    <E2 extends Throwable> OptionalResult<T, E2> flatMapErr(final OptionalResultFunction<E, T, E2> f);
 
     /**
      * Attempts to retrieve the underlying value, asserting that one must exist.
@@ -1186,7 +1200,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
         @Override
         @Deprecated
         @SuppressWarnings("unchecked")
-        public Result<T, Throwable> orElseTry(final Protocol protocol, final ThrowingSupplier<T, Throwable> f) {
+        public Value<T, Throwable> orElseTry(final Protocol protocol, final ThrowingSupplier<T, Throwable> f) {
             return (Value<T, Throwable>) this;
         }
 
@@ -1205,7 +1219,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public <M> Result<M, E> map(final Function<T, M> f) {
+        public <M> Value<M, E> map(final Function<T, M> f) {
             return new Value<>(f.apply(this.value));
         }
 
@@ -1214,8 +1228,9 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public <E2 extends Throwable> Result<T, E2> mapErr(final Function<E, E2> f) {
-            return new Value<>(this.value);
+        @SuppressWarnings("unchecked")
+        public <E2 extends Throwable> Value<T, E2> mapErr(final Function<E, E2> f) {
+            return (Value<T, E2>) this;
         }
 
         /**
@@ -1223,7 +1238,16 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public Result<T, E> flatMap(final Function<T, Result<T, E>> f) {
+        public <M> Result<M, E> flatMap(final ResultFunction<T, M, E> f) {
+            return f.apply(this.value);
+        }
+
+        /**
+         * @deprecated Always returns other.
+         */
+        @Override
+        @Deprecated
+        public <M> OptionalResult<M, E> flatMap(final OptionalResultFunction<T, M, E> f) {
             return f.apply(this.value);
         }
 
@@ -1232,8 +1256,19 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public Result<T, E> flatMapErr(final Function<E, Result<T, E>> f) {
-            return this;
+        @SuppressWarnings("unchecked")
+        public <E2 extends Throwable> Result<T, E2> flatMapErr(final ResultFunction<E, T, E2> f) {
+            return (Result<T, E2>) this;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("unchecked")
+        public <E2 extends Throwable> OptionalResult<T, E2> flatMapErr(final OptionalResultFunction<E, T, E2> f) {
+            return (OptionalResult<T, E2>) this;
         }
 
         /**
@@ -1552,9 +1587,10 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public <M> Result<M, E> map(final Function<T, M> f) {
+        @SuppressWarnings("unchecked")
+        public <M> Error<M, E> map(final Function<T, M> f) {
             try {
-                return new Error<>(this.error);
+                return (Error<M, E>) this;
             } catch (ClassCastException ignored) {
                 throw wrongErrorFound(this.error);
             }
@@ -1565,7 +1601,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public <E2 extends Throwable> Result<T, E2> mapErr(final Function<E, E2> f) {
+        public <E2 extends Throwable> Error<T, E2> mapErr(final Function<E, E2> f) {
             try {
                 return new Error<>(f.apply(this.error));
             } catch (ClassCastException ignored) {
@@ -1578,8 +1614,9 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public Result<T, E> flatMap(final Function<T, Result<T, E>> f) {
-            return this;
+        @SuppressWarnings("unchecked")
+        public <M> Result<M, E> flatMap(final ResultFunction<T, M, E> f) {
+            return (Result<M, E>) this;
         }
 
         /**
@@ -1587,12 +1624,31 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
          */
         @Override
         @Deprecated
-        public Result<T, E> flatMapErr(final Function<E, Result<T, E>> f) {
+        public <E2 extends Throwable> Result<T, E2> flatMapErr(final ResultFunction<E, T, E2> f) {
             try {
                 return f.apply(this.error);
             } catch (ClassCastException ignored) {
                 throw wrongErrorFound(this.error);
             }
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("unchecked")
+        public <M> OptionalResult<M, E> flatMap(final OptionalResultFunction<T, M, E> f) {
+            return (OptionalResult<M, E>) this;
+        }
+
+        /**
+         * @deprecated Always returns other.
+         */
+        @Override
+        @Deprecated
+        public <E2 extends Throwable> OptionalResult<T, E2> flatMapErr(final OptionalResultFunction<E, T, E2> f) {
+            return f.apply(this.error);
         }
 
         /**
@@ -1777,6 +1833,46 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
         @Deprecated
         public Result<T, Throwable> orElseTry(final Protocol protocol, final ThrowingSupplier<T, Throwable> f) {
             return protocol.of(f);
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("unchecked")
+        public <M> Empty<M, E> map(final Function<T, M> f) {
+            return (Empty<M, E>) this;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("unchecked")
+        public <E2 extends Throwable> Empty<T, E2> mapErr(final Function<E, E2> f) {
+            return (Empty<T, E2>) this;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("unchecked")
+        public <M> OptionalResult<M, E> flatMap(final OptionalResultFunction<T, M, E> f) {
+            return (OptionalResult<M, E>) this;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("unchecked")
+        public <E2 extends Throwable> OptionalResult<T, E2> flatMapErr(final OptionalResultFunction<E, T, E2> f) {
+            return (OptionalResult<T, E2>) this;
         }
 
         /**

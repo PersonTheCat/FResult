@@ -1,10 +1,6 @@
 package personthecat.fresult;
 
-import personthecat.fresult.functions.ThrowingBiConsumer;
-import personthecat.fresult.functions.ThrowingBiFunction;
-import personthecat.fresult.functions.ThrowingConsumer;
-import personthecat.fresult.functions.ThrowingFunction;
-import personthecat.fresult.functions.ThrowingSupplier;
+import personthecat.fresult.functions.*;
 
 import java.util.Optional;
 
@@ -194,9 +190,8 @@ class WithResources<R1 extends AutoCloseable, R2 extends AutoCloseable, E extend
     }
 
     /**
-     * Variant of {@link WithResources#nullable(ThrowingBiFunction)} which wraps the given
-     * value in Optional instead of returning an {@link PartialOptionalResult}. This may be useful
-     * in some cases where it is syntactically shorter to handle null values via {@link Optional}.
+     * Variant of {@link WithResources#nullable(ThrowingBiFunction)} in which the return
+     * value is wrapped in {@link Optional}.
      *
      * @param attempt A function which consumes both resources and either returns a value,
      *                throws an exception, or returns null.
@@ -204,28 +199,27 @@ class WithResources<R1 extends AutoCloseable, R2 extends AutoCloseable, E extend
      * @param <E2> The type of error being consumed by the wrapper.
      * @return A result which may either be a value, an error, or null.
      */
-    public <T, E2 extends E> PartialResult<Optional<T>, E> wrappingOptional(final ThrowingBiFunction<R1, R2, T, E2> attempt) {
-        return Result.wrappingOptional(() -> this.execute(attempt));
+    public <T, E2 extends E> PartialOptionalResult<T, E> nullable(final ThrowingOptionalBiFunction<R1, R2, T, E2> attempt) {
+        return this.nullable((ThrowingBiFunction<R1, R2, T, E>) (r1, r2) -> attempt.apply(r1, r2).orElse(null));
     }
 
     /**
-     * Variant of {@link WithResources#wrappingOptional(ThrowingBiFunction)} which wraps
-     * the given value in Optional instead of returning an {@link PartialOptionalResult}.
+     * Variant of {@link WithResources#nullable(ThrowingFunction) in which the return
+     * value is wrapped in {@link Optional}.
      *
-     * @see WithResources#wrappingOptional(ThrowingBiFunction)
      * @param attempt A function which consumes the first resource and either returns a
      *                value, throws an exception, or returns null.
      * @param <T> The type of value being consumed by the wrapper.
      * @param <E2> The type of error being consumed by the wrapper.
      * @return A result which may either be a value, an error, or null.
      */
-    public <T, E2 extends E> PartialResult<Optional<T>, E> wrappingOptional(final ThrowingFunction<R2, T, E2> attempt) {
-        return this.wrappingOptional((R1 r1, R2 r2) -> attempt.apply(r2));
+    public <T, E2 extends E> PartialOptionalResult<T, E> nullable(final ThrowingOptionalFunction<R2, T, E2> attempt) {
+        return this.nullable((R1 r1, R2 r2) -> attempt.apply(r2));
     }
 
     /**
-     * Variant of {@link WithResources#wrappingOptional(ThrowingBiFunction)} which is allowed to
-     * throw <b>any</b> kind of exception.
+     * Variant of {@link WithResources#suppressNullable(ThrowingBiFunction)} in which
+     * the return value is wrapped in {@link Optional}.
      *
      * @param attempt A function which consumes both resources and either returns a value,
      *                throws <b>any</b> exception, or returns null.
@@ -233,23 +227,22 @@ class WithResources<R1 extends AutoCloseable, R2 extends AutoCloseable, E extend
      * @param <E2> The type of error being consumed by the wrapper.
      * @return A result which may either be a value, <b>any</b> error, or null.
      */
-    public <T, E2 extends E> Result<Optional<T>, Throwable> suppressWrappingOptional(final ThrowingBiFunction<R1, R2, T, E2> attempt) {
-        return Result.suppressWrappingOptional(() -> this.execute(attempt));
+    public <T, E2 extends E> OptionalResult<T, Throwable> suppressNullable(final ThrowingOptionalBiFunction<R1, R2, T, E2> attempt) {
+        return this.suppressNullable((ThrowingBiFunction<R1, R2, T, E2>) (r1, r2) -> attempt.apply(r1, r2).orElse(null));
     }
 
     /**
-     * Variant of {@link WithResources#wrappingOptional(ThrowingFunction)} which is allowed to
-     * throw <b>any</b> kind of exception.
+     * Variant of {@link WithResources#suppressNullable(ThrowingFunction)} in which the
+     * return value is wrapped in {@link Optional}.
      *
-     * @see WithResources#wrappingOptional(ThrowingBiFunction)
      * @param attempt A function which consumes the first resource and either returns a
      *                value, throws <b>any</b> exception, or returns null.
      * @param <T> The type of value being consumed by the wrapper.
      * @param <E2> The type of error being consumed by the wrapper.
      * @return A result which may either be a value, <b>any</b> error, or null.
      */
-    public <T, E2 extends E> Result<Optional<T>, Throwable> suppressWrappingOptional(final ThrowingFunction<R2, T, E2> attempt) {
-        return this.suppressWrappingOptional((R1 r1, R2 r2) -> attempt.apply(r2));
+    public <T, E2 extends E> OptionalResult<T, Throwable> suppressNullable(final ThrowingOptionalFunction<R2, T, E2> attempt) {
+        return this.suppressNullable((R1 r1, R2 r2) -> attempt.apply(r2));
     }
 
     /**

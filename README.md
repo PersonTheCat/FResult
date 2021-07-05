@@ -1,19 +1,39 @@
 # FResult
-#### A proof of concept library for functional error handling in Java.
+#### A unified type for optional and error-prone procedures in Java.
 
-Result is a counterpart to `java.util.Optional` used for neatly handling errors.
-It provides a functional interface capable of completely replace the standard
-try-catch and try-with-resources notations in Java. It has two essential modes of
-use:
+FResult is a powerful and expressive counterpart to `java.util.Optional` used for 
+neatly handling errors. You can suppress all errors and immediately get a value:
 
-1. As a better return type for functions that use standard error handling
-   procedures, and
-2. As a wrapper around functions that do not.
+```java
+  final String s = Result.suppress(() -> readFile("myFile.txt"))
+    .expect("That didn't work!");
+```
+
+Or, be as specific as you like:
+
+```java
+  final String s = Result.resolve(FileNotFoundException.class, e -> "")
+    .resolve(IllegalArgumentException.class, Result::THROW)
+    .resolve(IOException.class, Result::WARN)
+    .suppressNullable(() -> readFile("myFile.txt"))
+    .ifEmpty(() -> log.warn("File was empty!"))
+    .ifErr(e -> log.warn("Couldn't read file!"))
+    .ifOk(t -> log.info("Good job!"))
+    .defaultIfEmpty(() -> "")
+    .resolve(e -> "Default text")
+    .expose();
+```
+
+This interface is capable of completely replacing the standard try-catch and 
+try-with-resources notations in Java. It has two essential modes of use:
+
+1. A better return type for functions that use standard error handling procedures
+2. A wrapper around functions that do not.
 
 ## A Better Return Type
 
-Let's take look at an example of scenario number one and then examine how these
-methods would be applied using `Result<T, E>`.
+Let's take a look at some examples of methods that use this new return type and
+then examine how they would be applied.
 
 ```java
   // Return the product of each block.
@@ -21,7 +41,7 @@ methods would be applied using `Result<T, E>`.
     final File f = getFile();
     try {
       return Result.ok(getContents(f));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       return Result.err(e);
     }
   }
@@ -37,13 +57,12 @@ methods would be applied using `Result<T, E>`.
 
 ### Implementation
 
-Each of these methods is said to return a **complete result**. This means that
-any error present inside of the wrapper is **reifiable**. In other words, it
+Each of these methods returns a **complete result**. This means that any error 
+present inside of the wrapper is effectively **reifiable**. In other words, it 
 contains a knowable type and thus can be safely interacted with.
 
-When interacting with complete result types in FResult, this library will
-provide a full suite of functional utilities for interacting with the underlying
-values and errors that may be present.
+FResult provides a full suite of functional utilities for interacting with the
+underlying values and errors in this type.
 
 Here, you can see a few of those methods in action:
 
@@ -60,11 +79,16 @@ Here, you can see a few of those methods in action:
   // Immediately supply an alternate value.
   final String output = betterReturnAlt()
     .orElseGet(String::new);
+
+  // Map the underlying data to a new type.
+  final int hashCode = betterReturnAlt()
+    .map(Object::hashCode)
+    .orElse(0);
 ```
 
 ## A Try-Catch Replacement Wrapper
 
-Now let's take a look at a second use case in which we're wrapping a standard,
+Now let's look at the second use case in which we're wrapping a standard,
 throwing method.
 
 ```java
@@ -78,17 +102,21 @@ throwing method.
 ### Implementation
 
 FResult provides a series of factory methods for wrapping standard error-prone
-conventions, including `#of`, `#any`, `#nullable`, `#with`, and `#define`.
+conventions, including `#of`, `#suppress`, `#nullable`, `#wrappingOptional`, 
+`#with`, `#define`, `#resolve`, and more.
 
-Let's start with the first and most important option: `Result#of`. The first
-thing you'll notice is that the return value is **not assignable to
-Result<T, E>**.
+Let's start with the first (and most important) option: `Result#of`. The first
+thing you'll notice is that the return type is **not assignable to Result<T, E>**.
 
 ```java
-  final Result.Pending<String, IOException> r1 = Result.of(Name::toWrap);
+  // Generate instructions for wrapping this method.
+  final PartialResult<String, IOException> r1 = Result.of(Name::toWrap);
+
+  // Consume these instructions and get a Result<T, E>.
+  final Result<String, IOException> r2 = r1.ifErr(e -> log.warn("Oops!"));
 ```
 
-The output of `Result#of` is a type of `Result$Pending`, which extends from
+The output of `Result#of` is a type of `Result$Pending`, which implements
 `PartialResult<T, E>`. This name has two very important implications:
 
 1. The result is lazily-evaluated and **does not exist yet**.
@@ -104,14 +132,19 @@ lose their generic parameters at runtime in Java, depending on the context in
 which they're used.
 
 For this reason, it is **impossible** to catch an exception based on a generic
-type, as the exact type is not known at runtime. To work around this, FResult
-exploits Java's type coercion mechanics to achieve a type-safe guarantee.
+type, as the exact type cannot be known at runtime. To work around this, FResult
+exploits Java's generic type coercion mechanics to achieve a type-safe guarantee.
 
-Let's see this in action:
+Let's take a closer look:
 
 ```java
+  // Output cannot contain a different exception.
   final Result<String, IOException> r1 = Result.of(Name::toWrap)
     .ifErr(e -> {/* handle error */}); // Type is implicitly cast
+
+  // Acknowledge and immediately discard the exception.
+  final Optional<String> r2 = Result.of(Name::toWrap)
+    .get(e -> { /* handle error */}); // Also resolves the type
 ```
 
 You should notice two things from this example:
@@ -141,45 +174,61 @@ majority of use cases immediately after calling `Result#of`:
 Note that if you would like to continue using the wrapper as a type of
 `Result<T, E>`, **you must always call** `ifErr`.
 
-### Ignoring Specific Error Types
+## Ignoring Specific Error Types
 
 Alternatively, if you would like to simply ignore the specific type of error
 being returned, you can employ `Pending#isAnyErr`, or `Pending#expectAnyErr`.
 
-Also see `Result#any` for returning a complete `Result<T, Throwable>` which
-may contain **any kind of error**.
+Also see `Result#suppress` for returning a complete `Result<T, Throwable>` which
+may contain **any kind of error**. Here's how that would look:
+
+```java
+  // No need to acknowledge the error, as it can be any type.
+  final Result<String, IOException> r1 = Result.suppress(Name::toWrap);
+
+  // Optionally discard the error and directly expose the contents.
+  final String r2 = Result.suppress(Name::toWrap)
+    .resolve(e -> "") // Type must now be a Result$Value
+    .expose(); // The data can safely be exposed
+```
 
 ## Handling `null` Return Values
 
-FResult also provides a couple of factory methods which will automatically wrap
-your static and dynamic values:
+FResult is also capable of wrapping methods that may return null. This functionality
+if provided via `OptionalResult` and `PartialOptionalResult`. Below are a few of the
+factory methods provided for handling nullable types.
 
-* `Result#nullable(T)` -> `Result$Value`
-* `Result#nullable(ThrowingSupplier<T, E>)` -> `Result$Pending`
+* `Result#nullable(T)` -> `OptionalResult`
+* `Result#nullable(ThrowingSupplier<T, E>)` -> `PartialOptionalResult`
+* `Result#nullable(Optional<T>)` -> `OptionalResult`
+* `Result#nullable(ThrowingOptionalSupplier<T, E>)` -> `PartialOptionalResult`
 
-Let's see what it looks like to handle these output values.
+
+Let's see what it looks like to use these wrappers:
 
 ```java
-  // Known types
-  final Object result = Result.nullable(potentiallyNullValue)
-    .orElseGet(() -> Optional.of(nonNullValue)) // Alternate value if err
+  // Known types (OptionalResult)
+  final Object r1 = Result.nullable(potentiallyNullValue)
     .orElseGet(Object::new); // Alternate value if null
     
-  // Unknown types
-  final Object result = Result.nullable(Name:mayReturnNullOrFail)
-    .expect("Error message!") // Potentially null value as `Optional<T>`
-    .orElseGet(Object::new); // Altnerate value as null
+  // Unknown types (PartialOptionalResult)
+  final Object r2 = Result.nullable(Name::mayReturnNullOrFail)
+    .ifErr(e -> log.warn("Error on output: {}", e))
+    .orElseGet(Object::new);
 ```
 
-It is worth noting that, as of FResult 2.0, wrapped values **are allowed to be
-null**. Since a couple of associated methods including `Result#get` already
-return `Optional<T>`, you can safely handle the case where values are null even
-in the absence of errors.
+Methods that wish to return nullable Result types must return an instance of
+`OptionalResult`. Here's how that would look:
 
 ```java
-  final Object result = Result.of(Name::mayReturnNullOrFail)
-    .get(Result::IGNORE) // Implicitly calls `ifErr` and ignores
-    .orElse("Horray!"); // Provide an alternate if null.
+  // Output may still be null even if no exception is thrown.
+  public static OptionalResult<String, SQLException> getBook() {
+    try {
+      return Result.nullable(dao.getBook());
+    } catch (final SQLSyntaxException e) {
+      return Result.err(e);
+    }
+  }
 ```
 
 ## Wrapping Try-With-Resources
@@ -193,7 +242,7 @@ Here's how you can use these methods:
   // Use a single resource via method chainging
   final String book = Result
     .with(() -> new FileReader("book.txt")) // Get the resource
-    .of(reader -> { /* read file */ }) // Use the resource
+    .suppress(reader -> { /* read file */ }) // Use the resource
     .orElseGet(e -> ""); // Handle errors
   
   // Use a single resource in one method
@@ -205,7 +254,7 @@ Here's how you can use these methods:
   final String book = Result
     .with(() -> new FileReader("book.txt"))
     .and(SecondResource::new) // Either a supplier or a function
-    .of(reader -> { /* read file */)
+    .suppress(reader -> { /* read file */)
     .orElseGet(e -> "");
 ```
 

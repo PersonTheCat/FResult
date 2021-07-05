@@ -1,6 +1,7 @@
 package personthecat.fresult;
 
 import personthecat.fresult.exception.MissingProcedureException;
+import personthecat.fresult.functions.ThrowingOptionalSupplier;
 import personthecat.fresult.functions.ThrowingSupplier;
 
 import javax.annotation.CheckReturnValue;
@@ -79,6 +80,18 @@ public class Resolver<T> {
         } catch (Throwable e) {
             return Result.nullable(tryHandle(e));
         }
+    }
+
+    /**
+     * Variant of {@link Protocol#nullable(ThrowingSupplier)} in which the return value is
+     * wrapped in {@link Optional}.
+     *
+     * @param attempt A function which either yields a value, throws an exception, or
+     *                returns null.
+     * @return A result which may either be a value, error, or empty.
+     */
+    public OptionalResult<T, Throwable> nullable(final ThrowingOptionalSupplier<T, Throwable> attempt) {
+        return this.nullable(() -> attempt.get().orElse(null));
     }
 
     /**

@@ -2,14 +2,7 @@ package personthecat.fresult;
 
 import personthecat.fresult.exception.ResultUnwrapException;
 import personthecat.fresult.exception.WrongErrorException;
-import personthecat.fresult.functions.OptionalResultFunction;
-import personthecat.fresult.functions.ResultFunction;
-import personthecat.fresult.functions.ThrowingRunnable;
-import personthecat.fresult.functions.ThrowingBiConsumer;
-import personthecat.fresult.functions.ThrowingBiFunction;
-import personthecat.fresult.functions.ThrowingConsumer;
-import personthecat.fresult.functions.ThrowingFunction;
-import personthecat.fresult.functions.ThrowingSupplier;
+import personthecat.fresult.functions.*;
 
 import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
@@ -287,11 +280,25 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param value Any given value which may be null
      * @param <T> The type of value being consumed by the wrapper.
      * @param <E> The type of error being consumed by the wrapper.
-     * @return A result which may either be a value, an error, or null.
+     * @return A result which may either be a value or empty.
      */
     @CheckReturnValue
     static <T, E extends Throwable> OptionalResult<T, E> nullable(final T value) {
-        return value == null ? Result.empty() : Result.ok(value);
+        return value != null ? Result.ok(value) : Result.empty();
+    }
+
+    /**
+     * Variant of {@link #nullable(T)} in which <code>T</code> is wrapped in {@link Optional}.
+     *
+     * @param value Any given value which may be empty.
+     * @param <T> The type of value being consumed by the wrapper.
+     * @param <E> The type of error being consumed by the wrapper.
+     * @return A result which either be a value or empty.
+     */
+    @CheckReturnValue
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    static <T, E extends Throwable> OptionalResult<T, E> nullable(final Optional<T> value) {
+        return value.isPresent() ? Result.ok(value.get()) : Result.empty();
     }
 
     /**
@@ -319,9 +326,23 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
     }
 
     /**
-     * Variant of {@link Result#suppress} which is allowed to contain null values.
+     * Variant of {@link #nullable(ThrowingSupplier)} in which the supplier returns {@link Optional}.
      *
-     * @see Result#nullable
+     * @see Result#nullable(T)
+     * @param attempt An expression which either yields a value or throws an error.
+     * @param <T> The type of value being consumed by the wrapper.
+     * @param <E> The type of error being consumed by the wrapper.
+     * @return A result which may either be a value, an error, or null.
+     */
+    @CheckReturnValue
+    static <T, E extends Throwable> PartialOptionalResult<T, E> nullable(final ThrowingOptionalSupplier<T, E> attempt) {
+        return new PendingNullable<>(() -> attempt.get().orElse(null));
+    }
+
+    /**
+     * Variant of {@link #suppress} which is allowed to contain null values.
+     *
+     * @see Result#nullable(T)
      * @param attempt An expression which either yields a value, throws <b>any</b> error,
      *                or returns null.
      * @param <T> The type of value being consumed by the wrapper.
@@ -336,55 +357,17 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
     }
 
     /**
-     * Variant of {@link Result#nullable} which wraps the given value in Optional
-     * instead of returning an {@link PartialOptionalResult}. This may be useful in some
-     * cases where it is syntactically shorter to handle null values via {@link Optional}.
+     * Variant of {@link #suppressNullable(ThrowingSupplier)} in which the return value is
+     * wrapped in {@link Optional}.
      *
-     * @param value The value being consumed by the wrapper.
-     * @param <T> The type of value being consumed by the wrapper.
-     * @param <E> The type of error being consumed by the wrapper.
-     * @return A result which may either be an optional value or an error.
-     */
-    static <T, E extends Throwable> Result<Optional<T>, E> wrappingOptional(final T value) {
-        return new Value<>(Optional.ofNullable(value));
-    }
-
-    /**
-     * Variant of {@link Result#nullable} which wraps the output in Optional instead of
-     * returning an instance of {@link PartialOptionalResult}. This may be useful in some cases
-     * where it is syntactically shorter to handle null values via {@link Optional}.
-     *
-     * <p>e.g.</p>
-     * <pre>
-     *   final Object result = Result.wrappingOptional(() -> dangerousMethod())
-     *     .expect("Error message!") // Get optional value
-     *     .orElseGet(Object::new); // Supply a default value.
-     * </pre>
-     *
-     * @param attempt An expression which either yields a value, throws an exception,
+     * @see Result#suppressNullable(ThrowingSupplier)
+     * @param attempt An expression which either yields a value, throws <b>any</b> error,
      *                or returns null.
      * @param <T> The type of value being consumed by the wrapper.
-     * @param <E> The type of error being consumed by the wrapper.
-     * @return A result which may either be an optional value or an error.
+     * @return A result which may either be a value, <b>any</b> error, or null.
      */
-    static <T, E extends Throwable> Pending<Optional<T>, E> wrappingOptional(final ThrowingSupplier<T, E> attempt) {
-        return new Pending<>(() -> Optional.ofNullable(attempt.get()));
-    }
-
-    /**
-     * Variant of {@link Result#suppress} which wraps the output value in {@link Optional}.
-     *
-     * @param attempt An expression which either yields a value, throws <b>any</b>
-     *                exception, or returns null.
-     * @param <T> The type of value being consumed by the wrapper.
-     * @return A result which may either be an optional value or <b>any</b> error.
-     */
-    static <T> Result<Optional<T>, Throwable> suppressWrappingOptional(final ThrowingSupplier<T, Throwable> attempt) {
-        try {
-            return ok(Optional.ofNullable(attempt.get()));
-        } catch (Throwable t) {
-            return err(t);
-        }
+    static <T> OptionalResult<T, Throwable> suppressNullable(final ThrowingOptionalSupplier<T, Throwable> attempt) {
+        return suppressNullable(() -> attempt.get().orElse(null));
     }
 
     /**

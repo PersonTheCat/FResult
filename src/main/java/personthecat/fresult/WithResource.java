@@ -2,6 +2,7 @@ package personthecat.fresult;
 
 import personthecat.fresult.functions.ThrowingConsumer;
 import personthecat.fresult.functions.ThrowingFunction;
+import personthecat.fresult.functions.ThrowingOptionalFunction;
 import personthecat.fresult.functions.ThrowingSupplier;
 
 import java.util.Optional;
@@ -93,6 +94,20 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
     }
 
     /**
+     * Variant of {@link WithResource#nullable(ThrowingFunction)} in which the return value
+     * is wrapped in {@link Optional}.
+     *
+     * @param attempt A function which consumes the resource and either returns a
+     *                value, throws an exception, or returns null.
+     * @param <T> The type of value being returned by the wrapper.
+     * @param <E2> The type of exception thrown by the resource getter.
+     * @return A result which may either be a value, error, or null.
+     */
+    public <T, E2 extends E> PartialOptionalResult<T, E> nullable(final ThrowingOptionalFunction<R, T, E2> attempt) {
+        return this.nullable((ThrowingFunction<R, T, E2>) r -> attempt.apply(r).orElse(null));
+    }
+
+    /**
      * Variant of {@link WithResource#nullable} which is allowed to throw <b>any</b>
      * kind of exception.
      *
@@ -107,32 +122,17 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
     }
 
     /**
-     * Variant of {@link WithResource#nullable) which wraps the given value in Optional
-     * instead of returning an {@link PartialOptionalResult }. This may be useful in some
-     * cases where it is syntactically shorter to handle null values via {@link Optional}.
-     *
-     * @param attempt A function which consumes the resource and either returns a
-     *                value, throws an exception, or returns null.
-     * @param <T> The type of value being returned by the wrapper.
-     * @param <E2> The type of exception thrown by the resource getter.
-     * @return A result which may either be an optional value or an error.
-     */
-    public <T, E2 extends E> PartialResult<Optional<T>, E> wrappingOptional(final ThrowingFunction<R, T, E2> attempt) {
-        return Result.wrappingOptional(() -> execute(attempt));
-    }
-
-    /**
-     * Variant of {@link WithResource#wrappingOptional} which is allowed to throw <b>any</b>
-     * kind of exception.
+     * Variant of {@link WithResource#suppressNullable(ThrowingFunction)} in which the return
+     * value is wrapped in {@link Optional}.
      *
      * @param attempt A function which consumes the resource and either returns a
      *                value, throws <b>any</b> exception, or returns null.
      * @param <T> The type of value being returned by the wrapper.
      * @param <E2> The type of exception thrown by the resource getter.
-     * @return A result which may either be an optional value or <b>any</b> error.
+     * @return A result which may either be a value, <b>any</b> error, or null.
      */
-    public <T, E2 extends E> Result<Optional<T>, Throwable> suppressWrappingOptional(final ThrowingFunction<R, T, E2> attempt) {
-        return Result.suppressWrappingOptional(() -> execute(attempt));
+    public <T, E2 extends E> OptionalResult<T, Throwable> suppressNullable(final ThrowingOptionalFunction<R, T, E2> attempt) {
+        return this.suppressNullable((ThrowingFunction<R, T, E2>) r -> attempt.apply(r).orElse(null));
     }
 
     /**

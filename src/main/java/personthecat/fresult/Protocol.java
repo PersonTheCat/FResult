@@ -1,6 +1,7 @@
 package personthecat.fresult;
 
 import personthecat.fresult.exception.MissingProcedureException;
+import personthecat.fresult.functions.ThrowingOptionalSupplier;
 import personthecat.fresult.functions.ThrowingRunnable;
 import personthecat.fresult.functions.ThrowingSupplier;
 
@@ -99,17 +100,16 @@ public class Protocol {
     }
 
     /**
-     * Variant of {@link Protocol#nullable} which wraps the given value in Optional
-     * instead of returning an {@link OptionalResult}. This may be useful in some
-     * cases where it is syntactically shorter to handle null values via {@link Optional}.
+     * Variant of {@link Protocol#nullable} in which the return value is wrapped in
+     * {@link Optional}.
      *
      * @param attempt A function which either yields a value, throws an exception, or
      *                returns null.
      * @param <T> The type of value expected from this procedure.
      * @return A result which may either be an optional value or an error.
      */
-    public <T> Result<Optional<T>, Throwable> wrappingOptional(final ThrowingSupplier<T, Throwable> attempt) {
-        return this.suppress(() -> Optional.ofNullable(attempt.get()));
+    public <T> OptionalResult<T, Throwable> nullable(final ThrowingOptionalSupplier<T, Throwable> attempt) {
+        return this.nullable(() -> attempt.get().orElse(null));
     }
 
     /**

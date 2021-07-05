@@ -868,7 +868,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * <p>e.g.</p>
      * <pre>
      *   Result.any(() -> "Hello, world!") // Result is OK
-     *     .andThen(System.out::println); // Result is printed.
+     *     .andThen(String::length); // becomes a Result&lt;Integer, E&gt;
      * </pre>
      *
      * @param f The event to run, if OK.

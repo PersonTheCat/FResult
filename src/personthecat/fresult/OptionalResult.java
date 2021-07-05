@@ -3,7 +3,6 @@ package personthecat.fresult;
 import personthecat.fresult.exception.ResultUnwrapException;
 import personthecat.fresult.exception.WrongErrorException;
 import personthecat.fresult.functions.OptionalResultFunction;
-import personthecat.fresult.functions.ResultFunction;
 import personthecat.fresult.functions.ThrowingFunction;
 import personthecat.fresult.functions.ThrowingSupplier;
 
@@ -11,6 +10,7 @@ import javax.annotation.CheckReturnValue;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static personthecat.fresult.Shorthand.f;
@@ -214,6 +214,7 @@ public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E
      */
     @CheckReturnValue
     <E2 extends Throwable> OptionalResult<T, E2> mapErr(final Function<E, E2> f);
+
     /**
      * Replaces the entire value with a new result, if present. Use this whenever
      * you need to map a potential value to another function which yields a Result.
@@ -234,6 +235,38 @@ public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E
      */
     @CheckReturnValue
     <E2 extends Throwable> OptionalResult<T, E2> flatMapErr(final OptionalResultFunction<E, T, E2> f);
+
+    /**
+     * Filters the underlying value out of the wrapper based on the given condition.
+     *
+     * <p>e.g.</p>
+     * <pre>
+     *   Result.of(() -> "Hello, world!) // Value is present
+     *     .filter(() -> false) // Value is removed.
+     *     .assertEmpty(); // No exception is thrown.
+     * </pre>
+     *
+     * @param f A predicate which determines whether to keep the underlying value, if present.
+     * @return A new result with no value, or else this.
+     */
+    @CheckReturnValue
+    OptionalResult<T, E> filter(final Predicate<T> f);
+
+    /**
+     * Filters the underlying error out of the wrapper based on the given condition.
+     *
+     * <p>e.g.</p>
+     * <pre>
+     *   Result.of(() -> throwException()) // Error is present
+     *     .filterErr(() -> false) // Error is removed.
+     *     .assertEmpty(); // No exception is thrown.
+     * </pre>
+     *
+     * @param f A predicate which determines whether to keep the underlying error, if present.
+     * @return A new result with no error, or else this.
+     */
+    @CheckReturnValue
+    OptionalResult<T, E> filterErr(final Predicate<E> f);
 
     /**
      * Attempts to retrieve the underlying value, asserting that one must exist.

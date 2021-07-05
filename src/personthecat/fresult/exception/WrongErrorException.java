@@ -5,7 +5,7 @@ package personthecat.fresult.exception;
  * caught by a Result wrapper.
  */
 public class WrongErrorException extends RuntimeException {
-    public WrongErrorException(String msg, Throwable e) {
+    public WrongErrorException(final String msg, final Throwable e) {
         super(msg, e);
     }
 }

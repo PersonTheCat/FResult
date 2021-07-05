@@ -18,6 +18,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static personthecat.fresult.Shorthand.f;
@@ -827,6 +828,38 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
     <E2 extends Throwable> OptionalResult<T, E2> flatMapErr(final OptionalResultFunction<E, T, E2> f);
 
     /**
+     * Filters the underlying value out of the wrapper based on the given condition.
+     *
+     * <p>e.g.</p>
+     * <pre>
+     *   Result.of(() -> "Hello, world!) // Value is present
+     *     .filter(() -> false) // Value is removed.
+     *     .assertEmpty(); // No exception is thrown.
+     * </pre>
+     *
+     * @param f A predicate which determines whether to keep the underlying value, if present.
+     * @return A new result with no value, or else this.
+     */
+    @CheckReturnValue
+    OptionalResult<T, E> filter(final Predicate<T> f);
+
+    /**
+     * Filters the underlying error out of the wrapper based on the given condition.
+     *
+     * <p>e.g.</p>
+     * <pre>
+     *   Result.of(() -> throwException()) // Error is present
+     *     .filterErr(() -> false) // Error is removed.
+     *     .assertEmpty(); // No exception is thrown.
+     * </pre>
+     *
+     * @param f A predicate which determines whether to keep the underlying error, if present.
+     * @return A new result with no error, or else this.
+     */
+    @CheckReturnValue
+    OptionalResult<T, E> filterErr(final Predicate<E> f);
+
+    /**
      * Attempts to retrieve the underlying value, asserting that one must exist.
      *
      * @throws ResultUnwrapException Wraps the underlying error, if present.
@@ -1271,6 +1304,20 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
             return (OptionalResult<T, E2>) this;
         }
 
+        @Override
+        public OptionalResult<T, E> filter(final Predicate<T> f) {
+            return f.test(this.value) ? this : Result.empty();
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        public OptionalResult<T, E> filterErr(final Predicate<E> f) {
+            return this;
+        }
+
         /**
          * @deprecated Call {@link Value#expose} instead.
          */
@@ -1652,6 +1699,20 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
         }
 
         /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        public OptionalResult<T, E> filter(final Predicate<T> f) {
+            return this;
+        }
+
+        @Override
+        public OptionalResult<T, E> filterErr(final Predicate<E> f) {
+            return f.test(this.error) ? this : Result.empty();
+        }
+
+        /**
          * @deprecated Always fails.
          */
         @Override
@@ -1873,6 +1934,24 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E> {
         @SuppressWarnings("unchecked")
         public <E2 extends Throwable> OptionalResult<T, E2> flatMapErr(final OptionalResultFunction<E, T, E2> f) {
             return (OptionalResult<T, E2>) this;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        public OptionalResult<T, E> filter(final Predicate<T> f) {
+            return this;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        public OptionalResult<T, E> filterErr(final Predicate<E> f) {
+            return this;
         }
 
         /**

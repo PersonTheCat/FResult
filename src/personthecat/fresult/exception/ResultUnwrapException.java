@@ -5,11 +5,7 @@ package personthecat.fresult.exception;
  * being present.
  */
 public class ResultUnwrapException extends RuntimeException {
-    public ResultUnwrapException(String msg) {
+    public ResultUnwrapException(final String msg) {
         super(msg);
-    }
-
-    public ResultUnwrapException(String msg, Throwable e) {
-        super(msg, e);
     }
 }

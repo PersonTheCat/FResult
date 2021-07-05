@@ -685,6 +685,22 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
     <U> U fold(final Function<T, U> ifOk, final Function<E, U> ifErr);
 
     /**
+     * Strips away the final layer of uncertainty and returns a definite {@link Value}.
+     *
+     * <p>e.g.</p>
+     * <pre>
+     *   final String value = getStringOrFail()
+     *     .resolve(e -> "Default value")
+     *     .expose(); // No consequences.
+     * </pre>
+     *
+     * @param ifErr A handler which provides a default value.
+     * @return A result which can only be a {@link Value}.
+     */
+    @CheckReturnValue
+    Value<T, E> resolve(final Function<E, T> ifErr);
+
+    /**
      * Yields the underlying value or else the input. This is equivalent to
      * running `getResult().get(e -> {...}).orElse();`
      *
@@ -1181,6 +1197,15 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         }
 
         /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        public Value<T, E> resolve(final Function<E, T> ifErr) {
+            return this;
+        }
+
+        /**
          * @deprecated Call {@link Value#expose} instead.
          */
         @Override
@@ -1395,55 +1420,33 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
             return this;
         }
 
-        /**
-         * @deprecated Always runs function.
-         */
         @Override
-        @Deprecated
         public <M> Value<M, E> andThen(final Function<T, M> f) {
             return Result.ok(f.apply(this.value));
         }
 
-        /**
-         * @deprecated Always runs function.
-         */
         @Override
-        @Deprecated
         public PartialResult<Void, E> andThenTry(final ThrowingRunnable<E> attempt) {
             return Result.of(attempt);
         }
 
-        /**
-         * @deprecated Always runs function.
-         */
         @Override
-        @Deprecated
         public <M> Result<M, Throwable> andThenSuppress(final ThrowingFunction<T, M, Throwable> attempt) {
             return Result.suppress(() -> attempt.apply(this.value));
         }
 
-        /**
-         * @deprecated Always runs function.
-         */
         @Override
-        @Deprecated
         public Value<Void, E> andThen(final Runnable f) {
             f.run();
             return Result.ok();
         }
 
-        /**
-         * @deprecated Always runs function.
-         */
         @Override
         @Deprecated
         public <M> PartialResult<M, E> andThenTry(final ThrowingFunction<T, M, E> attempt) {
             return Result.of(() -> attempt.apply(this.value));
         }
 
-        /**
-         * @deprecated Always runs function.
-         */
         @Override
         @Deprecated
         public Result<Void, Throwable> andThenSuppress(final ThrowingRunnable<Throwable> attempt) {
@@ -1639,6 +1642,11 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
             } catch (ClassCastException ignored) {
                 throw wrongErrorFound(this.error);
             }
+        }
+
+        @Override
+        public Value<T, E> resolve(final Function<E, T> ifErr) {
+            return Result.ok(ifErr.apply(this.error));
         }
 
         /**
@@ -2346,6 +2354,11 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         @CheckReturnValue
         public <U> U fold(final Function<T, U> ifOk, final Function<E, U> ifErr) {
             return this.execute().fold(ifOk, ifErr);
+        }
+
+        @Override
+        public Value<T, E> resolve(final Function<E, T> ifErr) {
+            return this.execute().resolve(ifErr);
         }
 
         @Override

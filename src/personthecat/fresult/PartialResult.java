@@ -79,6 +79,23 @@ public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E>
     <U> U fold(final Function<T, U> ifOk, final Function<E, U> ifErr);
 
     /**
+     * Strips away any uncertainty surrounding whether this wrapper contains an unexpected
+     * exception or otherwise and returns a definite {@link Result.Value}.
+     *
+     * <p>e.g.</p>
+     * <pre>
+     *   final String value = Result.of(() -> "Hello, world!")
+     *     .resolve(e -> "Default value")
+     *     .expose(); // No consequences.
+     * </pre>
+     *
+     * @param ifErr A handler which provides a default value.
+     * @return A result which can only be a {@link Result.Value}.
+     */
+    @CheckReturnValue
+    Result.Value<T, E> resolve(final Function<E, T> ifErr);
+
+    /**
      * Variant of {@link Result#get()} which simultaneously handles a potential error
      * and yields a substitute value. Equivalent to following a {@link Result#get()}
      * call with a call to {@link Optional#orElseGet}.

@@ -12,15 +12,16 @@ neatly handling errors. You can suppress all errors and immediately get a value:
 Or, be extremely specific:
 
 ```java
-  final String s = Result.resolve(FileNotFoundException.class, e -> "")
+  final String s = Result
+    .define(FileNotFoundException.class, e -> log.warn("Missing file: {}", e))
     .and(IllegalArgumentException.class, Result::THROW)
     .and(IOException.class, Result::WARN)
     .suppressNullable(() -> readFile("myFile.txt"))
     .ifEmpty(() -> log.warn("File was empty!"))
     .ifErr(e -> log.warn("Couldn't read file!"))
     .ifOk(t -> log.info("Good job!"))
-    .defaultIfEmpty(() -> "")
-    .resolve(e -> "Default text")
+    .defaultIfEmpty(() -> "Didn't want a book")
+    .resolve(e -> "Couldn't read the book")
     .expose();
 ```
 
@@ -140,11 +141,11 @@ Let's take a closer look:
 ```java
   // Output cannot contain a different exception.
   final Result<String, IOException> r1 = Result.of(Name::toWrap)
-    .ifErr(e -> {/* handle error */}); // Type is implicitly cast
+    .ifErr(e -> { /* handle error */ }); // Type is implicitly cast
 
   // Acknowledge and immediately discard the exception.
   final Optional<String> r2 = Result.of(Name::toWrap)
-    .get(e -> { /* handle error */}); // Also resolves the type
+    .get(e -> { /* handle error */ }); // Also resolves the type
 ```
 
 You should notice two things from this example:
@@ -254,7 +255,7 @@ Here's how you can use these methods:
   final String book = Result
     .with(() -> new FileReader("book.txt"))
     .and(SecondResource::new) // Either a supplier or a function
-    .suppress(reader -> { /* read file */ })
+    .suppress((reader, second) -> { /* read file */ })
     .orElseGet(e -> "");
 ```
 
@@ -297,7 +298,6 @@ of `Protocol`.
     .resolve(FileNotFound.class, e -> "Couldn't find it!")
     .and(RuntimeException.class, e -> "Something else went wrong!")
     .suppress(() -> readFile("myFile.txt")) // A definite value is provided
-    .map(f -> "It worked!") // Always returned
     .expose(); // Because this is Result$value, it may be exposed safely.
 ```
 

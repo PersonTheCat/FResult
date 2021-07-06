@@ -103,8 +103,8 @@ throwing method.
 ### Implementation
 
 FResult provides a series of factory methods for wrapping standard error-prone
-conventions, including `#of`, `#suppress`, `#nullable`, `#wrappingOptional`, 
-`#with`, `#define`, `#resolve`, and more.
+conventions, including `#of`, `#suppress`, `#nullable`, `#with`, `#define`,
+`#resolve`, and more.
 
 Let's start with the first (and most important) option: `Result#of`. The first
 thing you'll notice is that the return type is **not assignable to Result<T, E>**.
@@ -185,7 +185,7 @@ may contain **any kind of error**. Here's how that would look:
 
 ```java
   // No need to acknowledge the error, as it can be any type.
-  final Result<String, IOException> r1 = Result.suppress(Name::toWrap);
+  final Result<String, Throwable> r1 = Result.suppress(Name::toWrap);
 
   // Optionally discard the error and directly expose the contents.
   final String r2 = Result.suppress(Name::toWrap)

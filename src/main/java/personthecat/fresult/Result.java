@@ -24,69 +24,77 @@ import static personthecat.fresult.Shorthand.warn;
 import static personthecat.fresult.Shorthand.wrongErrorEx;
 
 /**
- * <h3>
- *   A counterpart to {@link Optional} used for neatly handling errors. Accepts
- * an expression which is not processed until a procedure for handling any
- * potential errors is implemented.
- * </h3><p>
- *   This class provides a functional interface capable of completely replacing
- * the standard try-catch and try-with-resources notations in Java. It has two
- * essential modes of use:
+ * <h2>
+ *   A powerful and expressive counterpart to {@link Optional} use for neatly
+ *   handling errors.
+ * </h2><p>
+ *   This interface is capable of completely replacing the standard try-catch
+ *   and try-with-resources notations in java. It has two essential modes of
+ *   use:
  * </p><ol>
  *     <li>As a better return type for functions that use standard error handling
  *         procedures, and</li>
  *     <li>As a wrapper around functions that do not.</li>
- * </ol><p>
- *   Basic implementations for each of the above use-cases are as follows:
- * </p><pre>
- *   // Return the product of each block.
- *   static Result<String, IOException> betterReturn() {
- *     final File f = getFile();
- *     try {
- *       return Result.ok(getContents(f));
- *     } catch (IOException e) {
- *       return Result.err(e);
+ * </ol><h2>
+ *     Using {@link Result} as a better return type
+ * </h2><pre>
+ *     // Return the product of each block.
+ *     public static Result<String, IOException> betterReturn() {
+ *       final File f = getFile();
+ *       try {
+ *         return Result.ok(getContents(f));
+ *       } catch (final IOException e) {
+ *         return Result.err(e);
+ *       }
  *     }
- *   }
  *
- *   // Standard conventions to be wrapped.
- *   static String toWrap() throws IOException {
- *     final File f = getFile();
- *     return getContents(f);
- *   }
+ *     // Create and return a new error directly.
+ *     public static Result<String, IOException> betterReturnAlt() {
+ *       final File f = getFile();
+ *       return testConditions(f)
+ *         ? Result.ok(getContents(f))
+ *         : Result.err(new IOException());
+ *     }
+ * </pre><h3>
+ *     Implementation
+ * </h3><pre>
+ *     // Handle all outcome scenarios.
+ *     final Result<String, IOException> r1 = betterReturn()
+ *       .ifErr(Result::WARN) // Output a warning message
+ *       .ifOk(ContentConsumer::apply); // Consume the text output
  *
- *   // Create and return a new error directly.
- *   static Result<String, IOException> betterReturnAlt() {
- *     final File f = getFile();
- *     return testConditions()
- *       ? Result.ok(getContents(f))
- *       : Result.err(new IOException());
- *   }
+ *     // Transform the data into a common type.
+ *     final int numLines = r1
+ *       .fold(t -> t.lines().size(), e -> 0);
+ *
+ *     // Immediately supply an alternate value.
+ *     final String output = betterReturnAlt()
+ *       .orElseGet(String::new);
+ *
+ *     // Map the underlying data to a new type.
+ *     final int hashCode = betterReturnAlt()
+ *       .map(Object::hashCode)
+ *       .orElse(0);
+ * </pre><h2>
+ *     Using {@link Result} as a try-catch wrapper
+ * </h2><pre>
+ *     // Standard conventions to be wrapped.
+ *     public static String toWrap() throws IOException {
+ *       final File f = getFile();
+ *       return getContents(f);
+ *     }
+ * </pre><h3>
+ *     Implementation
+ * </h3><pre>
+ *     // Generate instructions for wrapping this method.
+ *     final PartialResult<String, IOException> r1 = Result.of(Name::toWrap);
+ *
+ *     // Consume these instructions and get a Result<T, E>.
+ *     final Result<String, IOException> r2 = r1.ifErr(e -> log.warn("Oops!"));
  * </pre><p>
- *   The code which makes use of these functions would be identical in either
- * case, as follows:
- * </p><pre>{@code
- *   Result<String, IOException> r1 = betterReturn();
- *   Result<String, IOException> r2 = Result.of(Name::toWrap);
- * }</pre><p>
- *   It is worth noting that the above code always produces a new wrapper, but
- * is not guaranteed to execute. It is thereby essential that functions returning
- * new wrappers be followed by some type of handler, e.g. {@link #ifErr} or
- * {@link #expect}.
- * </p><p>
- *   Wrapping error-prone procedures in a functional interface has the modest
- * benefit of being more expressive and easier to maintain. It gives callers a
- * more convenient interface for supplying alternate values and reporting errors
- * to the end-user. However, this comes at a cost. It is certainly less safe and
- * less specific than vanilla error handling in Java, as it sometimes requires a
- * bit of runtime reflection and only accepts one error parameter by default. It
- * also requires a bit of memory overhead which likely has at least a minor
- * impact on performance. Some may consider functional error handling to be more
- * readable than imperative error handling, but this may not apply for most Java
- * developers, as it strays from the standard conventions they're used to and is
- * thus a bit of an outlier in that world.
+ *     Note that in order to use a {@link PartialResult} as a regular {@link Result},
+ *     <b>you must call {@link #ifErr}</b> or another such which can consume the error.
  * </p>
- *
  * @param <T> The type of value being wrapped.
  * @param <E> The type of error being wrapped.
  * @author PersonTheCat

@@ -124,56 +124,9 @@ The output of `Result#of` is a type of `Result$Pending`, which implements
 2. The wrapper **does not provide a complete set of utilities**. In other words,
    it is an **incomplete result**.
 
-The reason for this type of design is the product of **type erasure**.
-
-#### Type Erasure
-
-If you're unfamiliar, **type erasure** is the process by which generified types
-lose their generic parameters at runtime in Java, depending on the context in
-which they're used.
-
-For this reason, it is **impossible** to catch an exception based on a generic
-type, as the exact type cannot be known at runtime. To work around this, FResult
-exploits Java's generic type coercion mechanics to achieve a type-safe guarantee.
-
-Let's take a closer look:
-
-```java
-  // Output cannot contain a different exception.
-  final Result<String, IOException> r1 = Result.of(Name::toWrap)
-    .ifErr(e -> { /* handle error */ }); // Type is implicitly cast
-
-  // Acknowledge and immediately discard the exception.
-  final Optional<String> r2 = Result.of(Name::toWrap)
-    .get(e -> { /* handle error */ }); // Also resolves the type
-```
-
-You should notice two things from this example:
-
-1. The use of `e` implicitly casts the underlying error to its
-   expected type.
-2. The output is now assignable to a standard `Result<T, E>`.
-
-FResult uses this mechanism to guarantee that an unexpected type of error can
-never be caught by the wrapper. If one is, it will be rethrown as a
-`WrongErrorException`. This is only possible because `e` is returned to the
-call site while still being within the scope of the wrapper.
-
-If we apply this knowledge, we can see that it becomes safe to use the output
-of `Result#of` as a standard `Result<T, E>` **after applying** `ifErr`.
-
-The following methods are considered **safe** and are ideal candidates for the
-majority of use cases immediately after calling `Result#of`:
-
-* `Pending#ifErr(Consumer<E>)`
-* `Pending#get(Consumer<E>)`
-* `Pending#fold(Function<T, U>, Function<E, U>)`
-* `Pending#orElseGet(Function<E, T>)`
-* `Pending#orElseTry(ThrowingFunction<E, T, E>)`
-* `Pending#expect` and `Pending#expectF`
-
-Note that if you would like to continue using the wrapper as a type of
-`Result<T, E>`, **you must always call** `ifErr`.
+The reason for this type of design is the product of **type erasure**, which will
+be discussed at the [end of this article](#type-erasure). In short, when a method
+returns a `PartialResult`, **you must acknowledge the error**.
 
 ## Ignoring Specific Error Types
 
@@ -344,6 +297,55 @@ with multiple known and partial results.
   final Result<String, Throwable> r4 = getFourthResult();
   final Result<List<String>, Throwable> list = Result.collect(r3, r4);
 ```
+
+#### Type Erasure
+
+If you're unfamiliar, **type erasure** is the process by which generified types
+lose their generic parameters at runtime in Java, depending on the context in
+which they're used.
+
+For this reason, it is **impossible** to catch an exception based on a generic
+type, as the exact type cannot be known at runtime. To work around this, FResult
+exploits Java's generic type coercion mechanics to achieve a type-safe guarantee.
+
+Let's take a closer look:
+
+```java
+  // Output cannot contain a different exception.
+  final Result<String, IOException> r1 = Result.of(Name::toWrap)
+    .ifErr(e -> { /* handle error */ }); // Type is implicitly cast
+
+  // Acknowledge and immediately discard the exception.
+  final Optional<String> r2 = Result.of(Name::toWrap)
+    .get(e -> { /* handle error */ }); // Also resolves the type
+```
+
+You should notice two things from this example:
+
+1. The use of `e` implicitly casts the underlying error to its
+   expected type.
+2. The output is now assignable to a standard `Result<T, E>`.
+
+FResult uses this mechanism to guarantee that an unexpected type of error can
+never be caught by the wrapper. If one is, it will be rethrown as a
+`WrongErrorException`. This is only possible because `e` is returned to the
+call site while still being within the scope of the wrapper.
+
+If we apply this knowledge, we can see that it becomes safe to use the output
+of `Result#of` as a standard `Result<T, E>` **after applying** `ifErr`.
+
+The following methods are considered **safe** and are ideal candidates for the
+majority of use cases immediately after calling `Result#of`:
+
+* `Pending#ifErr(Consumer<E>)`
+* `Pending#get(Consumer<E>)`
+* `Pending#fold(Function<T, U>, Function<E, U>)`
+* `Pending#orElseGet(Function<E, T>)`
+* `Pending#orElseTry(ThrowingFunction<E, T, E>)`
+* `Pending#expect` and `Pending#expectF`
+
+Note that if you would like to continue using the wrapper as a type of
+`Result<T, E>`, **you must always call** `ifErr`.
 
 ## Motivations and Cons
 

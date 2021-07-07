@@ -21,7 +21,7 @@ import static personthecat.fresult.Shorthand.f;
 import static personthecat.fresult.Shorthand.runEx;
 import static personthecat.fresult.Shorthand.unwrapEx;
 import static personthecat.fresult.Shorthand.warn;
-import static personthecat.fresult.Shorthand.wrongErrorFound;
+import static personthecat.fresult.Shorthand.wrongErrorEx;
 
 /**
  * <h3>
@@ -91,7 +91,7 @@ import static personthecat.fresult.Shorthand.wrongErrorFound;
  * @param <E> The type of error being wrapped.
  * @author PersonTheCat
  */
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "UnusedReturnValue"})
 public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Serializable {
 
     /**
@@ -637,7 +637,6 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param f A function consuming the value, if present.
      * @return This, or else a complete {@link Result}.
      */
-    @CheckReturnValue
     Result<T, E> ifOk(final Consumer<T> f);
 
     /**
@@ -720,8 +719,8 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
     T orElseGet(final Function<E, T> f);
 
     /**
-     * Maps to a new Result if an error is present. Use this whenever
-     * your first and second attempt at retrieving a value may fail.
+     * Maps to a new Result if an error is present. Use this whenever your first and
+     * second attempt at retrieving a value may fail.
      *
      * @param f A new function to attempt in the presence of an error.
      * @return The pending result of the new function, if an error is present,
@@ -729,6 +728,17 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      */
     @CheckReturnValue
     PartialResult<T, E> orElseTry(final ThrowingFunction<E, T, E> f);
+
+    /**
+     * Variant of {@link #orElseTry(ThrowingFunction)} which ignores the error value,
+     * if present.
+     *
+     * @param f A new function to attempt in the presence of an error.
+     * @return The pending result of the new function, if an error is present,
+     *         or else a complete {@link Result}.
+     */
+    @CheckReturnValue
+    PartialResult<T, E> orElseTry(final ThrowingSupplier<T, E> f);
 
     /**
      * Variant of {@link #orElseTry(ThrowingFunction)} which handles the error when
@@ -1216,7 +1226,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         @Override
         @Deprecated
         public void expectEmpty(final String message) {
-            throw new AssertionError(message);
+            throw new ResultUnwrapException(message);
         }
 
         /**
@@ -1225,7 +1235,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         @Override
         @Deprecated
         public void expectEmptyF(final String message, final Object... args) {
-            throw new AssertionError(f(message, args));
+            throw new ResultUnwrapException(f(message, args));
         }
 
         /**
@@ -1528,7 +1538,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         @Deprecated
         public boolean isErr(Class<? super E> clazz) {
             if (!clazz.isInstance(this.error)) {
-                throw wrongErrorFound(this.error);
+                throw wrongErrorEx(this.error);
             }
             return true;
         }
@@ -1551,7 +1561,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
             try {
                 f.accept(this.error);
             } catch (ClassCastException ignored) {
-                throw wrongErrorFound(this.error);
+                throw wrongErrorEx(this.error);
             }
             return this;
         }
@@ -1605,6 +1615,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
          * @deprecated Always present - Use {@link Error#expose}.
          */
         @Override
+        @Deprecated
         public Optional<E> getErr() {
             return Optional.of(this.error);
         }
@@ -1618,7 +1629,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
             try {
                 return ifErr.apply(this.error);
             } catch (ClassCastException ignored) {
-                throw wrongErrorFound(this.error);
+                throw wrongErrorEx(this.error);
             }
         }
 
@@ -1669,7 +1680,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         @Override
         @Deprecated
         public void expectEmpty(final String message) {
-            throw new AssertionError(message);
+            throw new ResultUnwrapException(message);
         }
 
         /**
@@ -1678,7 +1689,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         @Override
         @Deprecated
         public void expectEmptyF(final String message, final Object... args) {
-            throw new AssertionError(f(message, args));
+            throw new ResultUnwrapException(f(message, args));
         }
 
         /**
@@ -1699,91 +1710,55 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
             throw this.error;
         }
 
-        /**
-         * @deprecated Always returns val.
-         */
         @Override
-        @Deprecated
         public T orElse(final T val) {
             return val;
         }
 
-        /**
-         * @deprecated Always returns val.
-         */
         @Override
-        @Deprecated
         public T orElseGet(final Supplier<T> f) {
             return f.get();
         }
 
-        /**
-         * @deprecated Always returns output of <code>f</code>.
-         */
         @Override
-        @Deprecated
         public T orElseGet(final Function<E, T> f) {
             try {
                 return f.apply(this.error);
             } catch (ClassCastException ignored) {
-                throw wrongErrorFound(this.error);
+                throw wrongErrorEx(this.error);
             }
         }
 
-        /**
-         * @deprecated Always runs function.
-         */
         @Override
-        @Deprecated
         public Pending<T, E> orElseTry(final ThrowingFunction<E, T, E> f) {
             try {
                 return Result.of(() -> f.apply(this.error));
             } catch (ClassCastException ignored) {
-                throw wrongErrorFound(this.error);
+                throw wrongErrorEx(this.error);
             }
         }
 
-        /**
-         * @deprecated Always runs function.
-         */
         @Override
-        @Deprecated
         public PartialResult<T, E> orElseTry(final ThrowingSupplier<T, E> f) {
             return Result.of(f);
         }
 
-        /**
-         * @deprecated Always runs function.
-         */
         @Override
-        @Deprecated
         public Result<T, Throwable> orElseTry(final Protocol protocol, final ThrowingFunction<E, T, Throwable> f) {
             return protocol.suppress(() -> f.apply(this.error));
         }
 
-        /**
-         * @deprecated Always runs function.
-         */
         @Override
-        @Deprecated
         public Result<T, Throwable> orElseTry(final Protocol protocol, final ThrowingSupplier<T, Throwable> f) {
             return protocol.suppress(f);
         }
 
-        /**
-         * @deprecated Always runs function.
-         */
         @Override
-        @Deprecated
         public Value<T, Throwable> orElseTry(final Resolver<T> resolver, final ThrowingFunction<E, T, Throwable> f) {
             return resolver.suppress(() -> f.apply(this.error));
         }
 
-        /**
-         * @deprecated Always runs function.
-         */
         @Override
-        @Deprecated
         public Value<T, Throwable> orElseTry(final Resolver<T> resolver, final ThrowingSupplier<T, Throwable> f) {
             return resolver.suppress(f);
         }
@@ -1793,7 +1768,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
             try {
                 return Optional.of(new Error<>(this.error));
             } catch (ClassCastException ignored) {
-                throw wrongErrorFound(this.error);
+                throw wrongErrorEx(this.error);
             }
         }
 
@@ -1807,20 +1782,16 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
             try {
                 return (Error<M, E>) this;
             } catch (ClassCastException ignored) {
-                throw wrongErrorFound(this.error);
+                throw wrongErrorEx(this.error);
             }
         }
 
-        /**
-         * @deprecated Always returns other.
-         */
         @Override
-        @Deprecated
         public <E2 extends Throwable> Error<T, E2> mapErr(final Function<E, E2> f) {
             try {
                 return new Error<>(f.apply(this.error));
             } catch (ClassCastException ignored) {
-                throw wrongErrorFound(this.error);
+                throw wrongErrorEx(this.error);
             }
         }
 
@@ -1834,16 +1805,12 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
             return (Result<M, E>) this;
         }
 
-        /**
-         * @deprecated Always returns other.
-         */
         @Override
-        @Deprecated
         public <E2 extends Throwable> Result<T, E2> flatMapErr(final ResultFunction<E, T, E2> f) {
             try {
                 return f.apply(this.error);
             } catch (ClassCastException ignored) {
-                throw Shorthand.wrongErrorFound(this.error);
+                throw wrongErrorEx(this.error);
             }
         }
 
@@ -1857,11 +1824,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
             return (OptionalResult<M, E>) this;
         }
 
-        /**
-         * @deprecated Always returns other.
-         */
         @Override
-        @Deprecated
         public <E2 extends Throwable> OptionalResult<T, E2> flatMapErr(final OptionalResultFunction<E, T, E2> f) {
             return f.apply(this.error);
         }

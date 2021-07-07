@@ -109,7 +109,6 @@ public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E
      * @param f A function consuming the value, if present.
      * @return This, or else a complete {@link Result}.
      */
-    @CheckReturnValue
     OptionalResult<T, E> ifOk(Consumer<T> f);
 
     /**

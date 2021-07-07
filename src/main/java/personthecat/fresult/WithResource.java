@@ -14,7 +14,7 @@ import java.util.Optional;
  * @param <R> The resource being consumed and closed by this handler.
  * @param <E> The type of error to be caught by the handler.
  */
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "UnusedReturnValue"})
 public class WithResource<R extends AutoCloseable, E extends Throwable> {
 
     private final ThrowingSupplier<R, E> rGetter;

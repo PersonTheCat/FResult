@@ -14,35 +14,35 @@ class Shorthand {
      * Prints to the standard error print stream. Would ideally be
      * replaced with Log4j or some other logger.
      */
-    static void warn(String x, Object... args) {
+    static void warn(final String x, final Object... args) {
         System.err.println(f(x, args));
     }
 
     /** Shorthand for {@link RuntimeException()}. */
-    static RuntimeException runEx(Throwable e) {
+    static RuntimeException runEx(final Throwable e) {
         return new RuntimeException(e);
     }
 
-    static RuntimeException runEx(String s, Throwable e) {
+    static RuntimeException runEx(final String s, final Throwable e) {
         return new RuntimeException(s, e);
     }
 
-    static RuntimeException runEx(String s) {
+    static RuntimeException runEx(final String s) {
         return new RuntimeException(s);
     }
 
     /** Shorthand for {@link ResultUnwrapException()}. */
-    static ResultUnwrapException unwrapEx(String msg) {
+    static ResultUnwrapException unwrapEx(final String msg) {
         return new ResultUnwrapException(msg);
     }
 
     /** Shorthand for {@link WrongErrorException()}. */
-    static WrongErrorException wrongErrorEx(String msg, Throwable e) {
-        return new WrongErrorException(msg, e);
+    static WrongErrorException wrongErrorEx(final Throwable e) {
+        return new WrongErrorException("Wrong type of error caught by wrapper.", e);
     }
 
     /** Shorthand for {@link MissingProcedureException()}. */
-    static MissingProcedureException missingProcedureEx(Throwable e) {
+    static MissingProcedureException missingProcedureEx(final Throwable e) {
         return new MissingProcedureException(e);
     }
 
@@ -74,7 +74,7 @@ class Shorthand {
         if (result instanceof Result.Error) {
             final Throwable error = ((Result.Error) result).expose();
             if (!clazz.isInstance(error)) {
-                throw wrongErrorFound(error);
+                throw wrongErrorEx(error);
             }
             return true;
         }
@@ -87,12 +87,7 @@ class Shorthand {
         try {
             return (E) err;
         } catch (final ClassCastException e) {
-            throw wrongErrorFound(err);
+            throw wrongErrorEx(err);
         }
-    }
-
-    /** Forwards `err` and informs the user that the wrong kind of error was caught. */
-    static WrongErrorException wrongErrorFound(final Throwable err) {
-        return wrongErrorEx("Wrong type of error caught by wrapper.", err);
     }
 }

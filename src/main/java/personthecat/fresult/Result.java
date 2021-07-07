@@ -789,15 +789,6 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
     }
 
     /**
-     * Transposes a result with an optional value into an optional result.
-     *
-     * @throws ClassCastException if the underlying value is not wrapped in {@link Optional<U>}.
-     * @return A new Result wrapping the value directly, itself wrapped in {@link Optional}.
-     */
-    @CheckReturnValue
-    <U> Optional<Result<U, E>> transpose();
-
-    /**
      * Replaces the underlying value with the result of func.apply(). Use this
      * whenever you need to map a potential value to a different value.
      *
@@ -1340,16 +1331,6 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         }
 
         @Override
-        @SuppressWarnings("unchecked")
-        public <U> Optional<Result<U, E>> transpose() {
-            try {
-                return ((Optional<U>) this.value).map(Result::ok);
-            } catch (ClassCastException e) {
-                throw new ClassCastException("Underlying value not wrapped in Optional<U>");
-            }
-        }
-
-        @Override
         public <M> Value<M, E> map(final Function<T, M> f) {
             return new Value<>(f.apply(this.value));
         }
@@ -1761,15 +1742,6 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         @Override
         public Value<T, Throwable> orElseTry(final Resolver<T> resolver, final ThrowingSupplier<T, Throwable> f) {
             return resolver.suppress(f);
-        }
-
-        @Override
-        public <U> Optional<Result<U, E>> transpose() {
-            try {
-                return Optional.of(new Error<>(this.error));
-            } catch (ClassCastException ignored) {
-                throw wrongErrorEx(this.error);
-            }
         }
 
         /**

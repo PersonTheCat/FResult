@@ -59,7 +59,7 @@ import static personthecat.fresult.Shorthand.f;
  * @param <T> The type of data being consumed by the wrapper.
  * @param <E> The type of error being consumed by the wrapper.
  */
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "UnusedReturnValue"})
 public interface PartialOptionalResult<T, E extends Throwable> extends BasicResult<T, E> {
 
     /**

@@ -8,11 +8,12 @@ import javax.annotation.CheckReturnValue;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static personthecat.fresult.Shorthand.f;
 
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E> {
+public interface PartialResult<T, E extends Throwable> extends PartialOptionalResult<T, E> {
 
     /**
      * Variant of {@link Result#isErr} which can safely guarantee whether the
@@ -24,6 +25,7 @@ public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E>
      * @param clazz The type of error expected by the wrapper.
      * @return Whether an expected type of exception is found.
      */
+    @Override
     @CheckReturnValue
     boolean isErr(final Class<? super E> clazz);
 
@@ -33,6 +35,7 @@ public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E>
      *
      * @return Whether <em>any</em> error is found in the wrapper.
      */
+    @Override
     @CheckReturnValue
     boolean isAnyErr();
 
@@ -46,6 +49,7 @@ public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E>
      * @param f A function consuming the error, if present.
      * @return This, or else a complete {@link Result}.
      */
+    @Override
     Result<T, E> ifErr(final Consumer<E> f);
 
     /**
@@ -53,6 +57,7 @@ public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E>
      *
      * @return The underlying error, wrapped in {@link Optional}.
      */
+    @Override
     @CheckReturnValue
     Optional<Throwable> getAnyErr();
 
@@ -138,6 +143,7 @@ public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E>
      * @throws ResultUnwrapException If no error is present to be unwrapped.
      * @return The underlying error.
      */
+    @Override
     @CheckReturnValue
     default Throwable unwrapErr() {
         return this.expectErr("Attempted to unwrap a result with no error.");
@@ -155,6 +161,7 @@ public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E>
      * @param message The message to display in the event of an error.
      * @return The underlying error.
      */
+    @Override
     Throwable expectErr(final String message);
 
     /**
@@ -164,6 +171,7 @@ public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E>
      * @param args A series of interpolated arguments (replacing <code>{}</code>).
      * @return The underlying error.
      */
+    @Override
     default Throwable expectErrF(final String message, final Object... args) {
         return expectErr(f(message, args));
     }
@@ -174,6 +182,7 @@ public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E>
      * @throws E The original error, if present.
      * @return The underlying value.
      */
+    @Override
     default T orElseThrow() throws Throwable {
         this.throwIfErr();
         return this.unwrap();
@@ -184,5 +193,45 @@ public interface PartialResult<T, E extends Throwable> extends BasicResult<T, E>
      *
      * @throws E The original error, if present.
      */
+    @Override
     void throwIfErr() throws Throwable;
+
+    /**
+     * @deprecated Never empty.
+     */
+    @Override
+    @Deprecated
+    default PartialResult<T, E> defaultIfEmpty(final Supplier<T> defaultGetter) {
+        return this;
+    }
+
+    /**
+     * @deprecated Never empty.
+     */
+    @Override
+    @Deprecated
+    default PartialResult<T, E> ifEmpty(final Runnable f) {
+        return this;
+    }
+
+    /**
+     * @deprecated Never empty.
+     */
+    @Override
+    @Deprecated
+    default void assertEmpty() {}
+
+    /**
+     * @deprecated Never empty.
+     */
+    @Override
+    @Deprecated
+    default void expectEmpty(final String message) {}
+
+    /**
+     * @deprecated Never empty.
+     */
+    @Override
+    @Deprecated
+    default void expectEmptyF(final String message, final Object... args) {}
 }

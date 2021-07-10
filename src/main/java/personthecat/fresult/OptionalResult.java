@@ -4,6 +4,7 @@ import personthecat.fresult.exception.ResultUnwrapException;
 import personthecat.fresult.exception.WrongErrorException;
 import personthecat.fresult.functions.OptionalResultFunction;
 import personthecat.fresult.functions.ThrowingFunction;
+import personthecat.fresult.functions.ThrowingRunnable;
 import personthecat.fresult.functions.ThrowingSupplier;
 
 import javax.annotation.CheckReturnValue;
@@ -251,6 +252,79 @@ public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E
      */
     @CheckReturnValue
     OptionalResult<T, E> filterErr(final Predicate<E> f);
+
+    /**
+     * Consumes an event to run in the event of success in this wrapper.
+     *
+     * <p>e.g.</p>
+     * <pre>
+     *   Result.any(() -> "Hello, world!") // Result is OK
+     *     .andThen(String::length); // becomes a Result&lt;Integer, E&gt;
+     * </pre>
+     *
+     * @param f The event to run, if OK.
+     * @param <M> The new type of value being consumed by the wrapper.
+     * @return A new result containing the output of this function, or else this.
+     */
+    @CheckReturnValue
+    <M> OptionalResult<M, E> andThen(final Function<T, M> f);
+
+    /**
+     * Variant of {@link #andThen(Function)} which may fail. <b>Any error returned by this
+     * event must be acknowledged</b>.
+     *
+     * <p>e.g.</p>
+     * <pre>
+     *   Result.any(() -> "Hello, world!) // Result is OK
+     *     .andThenTry(s -> throwException()) // Result is not OK
+     *     .ifErr(Result::WARN); // This problem will be logged.
+     * </pre>
+     *
+     * @param attempt The next procedure to attempt, if OK.
+     * @param <M> The new type of value being consumed by the wrapper.
+     * @return A new result containing the output of this function, or else this.
+     */
+    @CheckReturnValue
+    <M> PartialOptionalResult<M, E> andThenTry(final ThrowingFunction<T, M, E> attempt);
+
+    /**
+     * Variant of {@link #andThenTry} which is allowed to throw <b>any</b> exception.
+     * Returns a less restrictive wrapper.
+     *
+     * @param attempt The next procedure to attempt, if OK.
+     * @param <M> The new type of value being consumed by the wrapper.
+     * @return A new result containing the output of this function, or else this.
+     */
+    @CheckReturnValue
+    <M> OptionalResult<M, Throwable> andThenSuppress(final ThrowingFunction<T, M, Throwable> attempt);
+
+    /**
+     * Variant of {@link #andThen(Function)} which ignores the value in the wrapper.
+     *
+     * @param f The event to run, if OK.
+     * @return A new result containing the output of this function, or else this.
+     */
+    OptionalResult<Void, E> andThen(final Runnable f);
+
+    /**
+     * Variant of {@link #andThenTry(ThrowingFunction)} which ignores the value in
+     * the wrapper.
+     *
+     * @param attempt The next procedure to attempt, if OK.
+     * @return A new result containing the output of this function, or else this.
+     */
+    @CheckReturnValue
+    PartialOptionalResult<Void, E> andThenTry(final ThrowingRunnable<E> attempt);
+
+    /**
+     * Variant of {@link #andThenSuppress(ThrowingFunction)} which ignores the value
+     * in the wrapper.
+     *
+     * @param attempt The next procedure to attempt, if OK.
+     * @return A new result containing the output of this function, or else this.
+     */
+    @CheckReturnValue
+    OptionalResult<Void, Throwable> andThenSuppress(final ThrowingRunnable<Throwable> attempt);
 
     /**
      * Attempts to retrieve the underlying error, asserting that one must exist.

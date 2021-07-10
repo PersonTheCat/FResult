@@ -1023,7 +1023,7 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
      */
     @Override
     @CheckReturnValue
-    default E expectErrF(final String message, final Object... args) {
+    default E expectErr(final String message, final Object... args) {
         return this.expectErr(f(message, args));
     }
 
@@ -1205,7 +1205,7 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
          * @deprecated Call {@link Value#expose} instead.
          */
         @Override
-        public T expectF(final String message, final Object... args) {
+        public T expect(final String message, final Object... args) {
             return this.value;
         }
 
@@ -1223,7 +1223,7 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
          */
         @Override
         @Deprecated
-        public E expectErrF(final String message, final Object... args) {
+        public E expectErr(final String message, final Object... args) {
             throw unwrapEx(f(message, args));
         }
 
@@ -1289,7 +1289,7 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
         @Override
         @Deprecated
         @SuppressWarnings("deprecation")
-        public void expectEmptyF(final String message, final Object... args) {
+        public void expectEmpty(final String message, final Object... args) {
             throw unwrapEx(f(message, args));
         }
 
@@ -1654,7 +1654,7 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
          */
         @Override
         @Deprecated
-        public T expectF(final String message, final Object... args) {
+        public T expect(final String message, final Object... args) {
             throw unwrapEx(f(message, args));
         }
 
@@ -1672,7 +1672,7 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
          */
         @Override
         @Deprecated
-        public E expectErrF(final String message, final Object... args) {
+        public E expectErr(final String message, final Object... args) {
             return this.error;
         }
 
@@ -1740,7 +1740,7 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
         @Override
         @Deprecated
         @SuppressWarnings("deprecation")
-        public void expectEmptyF(final String message, final Object... args) {
+        public void expectEmpty(final String message, final Object... args) {
             throw unwrapEx(f(message, args));
         }
 
@@ -2271,7 +2271,7 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
          */
         @Override
         @Deprecated
-        public T expectF(final String message, final Object... args) {
+        public T expect(final String message, final Object... args) {
             throw new NullPointerException(f(message, args));
         }
 
@@ -2289,7 +2289,7 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
          */
         @Override
         @Deprecated
-        public E expectErrF(final String message, final Object... args) {
+        public E expectErr(final String message, final Object... args) {
             throw new NullPointerException(f(message, args));
         }
 
@@ -2305,7 +2305,7 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
          */
         @Override
         @Deprecated
-        public void expectEmptyF(final String message, final Object... args) {}
+        public void expectEmpty(final String message, final Object... args) {}
 
         /**
          * @deprecated Always throws NPE.

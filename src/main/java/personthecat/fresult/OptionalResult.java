@@ -367,7 +367,7 @@ public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E
      * @param args A series of interpolated arguments (replacing <code>{}</code>).
      * @return The underlying error.
      */
-    default E expectErrF(final String message, final Object... args) {
+    default E expectErr(final String message, final Object... args) {
         return this.expectErr(f(message, args));
     }
 
@@ -386,7 +386,7 @@ public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E
      * @param args A series of interpolated arguments (replacing <code>{}</code>).
      * @throws ResultUnwrapException If a value or an error is present.
      */
-    default void expectEmptyF(final String message, final Object... args) {
+    default void expectEmpty(final String message, final Object... args) {
         this.expectEmpty(f(message, args));
     }
 

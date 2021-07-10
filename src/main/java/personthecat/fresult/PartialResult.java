@@ -172,7 +172,7 @@ public interface PartialResult<T, E extends Throwable> extends PartialOptionalRe
      * @return The underlying error.
      */
     @Override
-    default Throwable expectErrF(final String message, final Object... args) {
+    default Throwable expectErr(final String message, final Object... args) {
         return expectErr(f(message, args));
     }
 
@@ -233,5 +233,5 @@ public interface PartialResult<T, E extends Throwable> extends PartialOptionalRe
      */
     @Override
     @Deprecated
-    default void expectEmptyF(final String message, final Object... args) {}
+    default void expectEmpty(final String message, final Object... args) {}
 }

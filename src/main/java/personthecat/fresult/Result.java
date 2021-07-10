@@ -183,7 +183,7 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
      */
     @CheckReturnValue
     @SuppressWarnings("unchecked")
-    static <T, E extends Throwable> OptionalResult<T, E> empty() {
+    static <T, E extends Throwable> Empty<T, E> empty() {
         return (Empty<T, E>) Empty.INSTANCE;
     }
 
@@ -1264,28 +1264,34 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
         }
 
         /**
-         * @deprecated Has no effect.
+         * @deprecated Always fails.
          */
         @Override
         @Deprecated
         @SuppressWarnings("deprecation")
-        public void assertEmpty() {}
+        public void assertEmpty() {
+            throw unwrapEx("Result contains a value");
+        }
 
         /**
-         * @deprecated Has no effect.
+         * @deprecated Always fails.
          */
         @Override
         @Deprecated
         @SuppressWarnings("deprecation")
-        public void expectEmpty(final String message) {}
+        public void expectEmpty(final String message) {
+            throw unwrapEx(message);
+        }
 
         /**
-         * @deprecated Has no effect.
+         * @deprecated Always fails.
          */
         @Override
         @Deprecated
         @SuppressWarnings("deprecation")
-        public void expectEmptyF(final String message, final Object... args) {}
+        public void expectEmptyF(final String message, final Object... args) {
+            throw unwrapEx(f(message, args));
+        }
 
         /**
          * @deprecated Call {@link Value#expose} instead.
@@ -1709,28 +1715,34 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
         }
 
         /**
-         * @deprecated Has no effect.
+         * @deprecated Always fails.
          */
         @Override
         @Deprecated
         @SuppressWarnings("deprecation")
-        public void assertEmpty() {}
+        public void assertEmpty() {
+            throw unwrapEx("Result contains an error.");
+        }
 
         /**
-         * @deprecated Has no effect.
+         * @deprecated Always fails.
          */
         @Override
         @Deprecated
         @SuppressWarnings("deprecation")
-        public void expectEmpty(final String message) {}
+        public void expectEmpty(final String message) {
+            throw unwrapEx(message);
+        }
 
         /**
-         * @deprecated Has no effect.
+         * @deprecated Always fails.
          */
         @Override
         @Deprecated
         @SuppressWarnings("deprecation")
-        public void expectEmptyF(final String message, final Object... args) {}
+        public void expectEmptyF(final String message, final Object... args) {
+            throw unwrapEx(f(message, args));
+        }
 
         @Override
         public T orElse(final T val) {

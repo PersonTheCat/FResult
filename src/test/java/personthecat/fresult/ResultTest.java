@@ -116,6 +116,16 @@ public final class ResultTest {
     }
 
     @Test
+    public void filter_yieldsError() {
+        assertTrue(Result.ok("").filter(t -> false, RuntimeException::new).isErr());
+    }
+
+    @Test
+    public void filter_yieldsValue() {
+        assertTrue(Result.err(new NullPointerException()).filterErr(e -> false, Object::new).isOk());
+    }
+
+    @Test
     public void throwIfErr_onError_throwsException() {
         final Result<String, Throwable> r = Result.suppress(TestUtils::throwsIOE);
         assertThrows(IOException.class, r::throwIfErr);

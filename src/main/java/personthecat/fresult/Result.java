@@ -895,6 +895,24 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
     OptionalResult<T, E> filter(final Predicate<T> f);
 
     /**
+     * Variant of {@link #filter(Predicate)} which converts the filtered value into an error.
+     *
+     * <p>e.g.</p>
+     * <pre>
+     *   Result.of(() -> "Hello, world!") // Value is present
+     *     .filter(String::isEmpty, Throwable::new)
+     *     .unwrapErr(); // No exception is thrown.
+     * </pre>
+     *
+     * @param f A predicate which determines whether to keep the underlying value, if present.
+     * @param err Supplies a default error if the predicate is matched.
+     * @return A new result with an error, or else this.
+     */
+    @Override
+    @CheckReturnValue
+    Result<T, E> filter(final Predicate<T> f, final Supplier<E> err);
+
+    /**
      * Filters the underlying error out of the wrapper based on the given condition.
      *
      * <p>e.g.</p>
@@ -910,6 +928,24 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
     @Override
     @CheckReturnValue
     OptionalResult<T, E> filterErr(final Predicate<E> f);
+
+    /**
+     * Variant of {@link #filterErr(Predicate)} which converts the filtered error into a value.
+     *
+     * <p>e.g.</p>
+     * <pre>
+     *   Result.&lt;Integer, Exception&gt;of(() -> throwException()) // Error is present
+     *     .filterErr(e -> false, () -> 0) // Error is removed.
+     *     .unwrap(); // No exception is thrown.
+     * </pre>
+     *
+     * @param f A predicate which determines whether to keep the underlying error, if present.
+     * @param val Supplies a default value if the predicate is matched.
+     * @return A new result with a value, or else this.
+     */
+    @Override
+    @CheckReturnValue
+    Result<T, E> filterErr(final Predicate<E> f, final Supplier<T> val);
 
     /**
      * Consumes an event to run in the event of success in this wrapper.
@@ -1428,12 +1464,26 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
             return f.test(this.value) ? this : Result.empty();
         }
 
+        @Override
+        public Result<T, E> filter(final Predicate<T> f, final Supplier<E> err) {
+            return f.test(this.value) ? this : Result.err(err.get());
+        }
+
         /**
          * @deprecated Always returns this.
          */
         @Override
         @Deprecated
-        public OptionalResult<T, E> filterErr(final Predicate<E> f) {
+        public Value<T, E> filterErr(final Predicate<E> f) {
+            return this;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        public Value<T, E> filterErr(final Predicate<E> f, final Supplier<T> val) {
             return this;
         }
 
@@ -1863,9 +1913,23 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
             return this;
         }
 
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        public Error<T, E> filter(final Predicate<T> f, final Supplier<E> err) {
+            return this;
+        }
+
         @Override
         public OptionalResult<T, E> filterErr(final Predicate<E> f) {
             return f.test(this.error) ? this : Result.empty();
+        }
+
+        @Override
+        public Result<T, E> filterErr(final Predicate<E> f, final Supplier<T> val) {
+            return f.test(this.error) ? this : Result.ok(val.get());
         }
 
         /**
@@ -2159,7 +2223,25 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
          */
         @Override
         @Deprecated
+        public OptionalResult<T, E> filter(final Predicate<T> f, final Supplier<E> err) {
+            return this;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
         public Empty<T, E> filterErr(final Predicate<E> f) {
+            return this;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        public OptionalResult<T, E> filterErr(final Predicate<E> f, final Supplier<T> val) {
             return this;
         }
 

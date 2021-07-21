@@ -226,8 +226,8 @@ public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E
      *
      * <p>e.g.</p>
      * <pre>
-     *   Result.of(() -> "Hello, world!) // Value is present
-     *     .filter(() -> false) // Value is removed.
+     *   Result.of(() -> "Hello, world!") // Value is present
+     *     .filter(t -> false) // Value is removed.
      *     .assertEmpty(); // No exception is thrown.
      * </pre>
      *
@@ -238,12 +238,29 @@ public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E
     OptionalResult<T, E> filter(final Predicate<T> f);
 
     /**
+     * Variant of {@link #filter(Predicate)} which converts the filtered value into an error.
+     *
+     * <p>e.g.</p>
+     * <pre>
+     *   Result.of(() -> "Hello, world!") // Value is present
+     *     .filter(String::isEmpty, Throwable::new)
+     *     .unwrapErr(); // No exception is thrown.
+     * </pre>
+     *
+     * @param f A predicate which determines whether to keep the underlying value, if present.
+     * @param err Supplies a default error if the predicate is matched.
+     * @return A new result with an error, or else this.
+     */
+    @CheckReturnValue
+    OptionalResult<T, E> filter(final Predicate<T> f, final Supplier<E> err);
+
+    /**
      * Filters the underlying error out of the wrapper based on the given condition.
      *
      * <p>e.g.</p>
      * <pre>
      *   Result.of(() -> throwException()) // Error is present
-     *     .filterErr(() -> false) // Error is removed.
+     *     .filterErr(e -> false) // Error is removed.
      *     .assertEmpty(); // No exception is thrown.
      * </pre>
      *
@@ -252,6 +269,23 @@ public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E
      */
     @CheckReturnValue
     OptionalResult<T, E> filterErr(final Predicate<E> f);
+
+    /**
+     * Variant of {@link #filterErr(Predicate)} which converts the filtered error into a value.
+     *
+     * <p>e.g.</p>
+     * <pre>
+     *   Result.&lt;Integer, Exception&gt;of(() -> throwException()) // Error is present
+     *     .filterErr(e -> false, () -> 0) // Error is removed.
+     *     .unwrap(); // No exception is thrown.
+     * </pre>
+     *
+     * @param f A predicate which determines whether to keep the underlying error, if present.
+     * @param val Supplies a default value if the predicate is matched.
+     * @return A new result with a value, or else this.
+     */
+    @CheckReturnValue
+    OptionalResult<T, E> filterErr(final Predicate<E> f, final Supplier<T> val);
 
     /**
      * Consumes an event to run in the event of success in this wrapper.

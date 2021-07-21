@@ -1,6 +1,6 @@
 apply plugin: 'java'
 
-version = '2.0-BETA-3'
+version = '2.0-BETA-4'
 group = 'PersonTheCat'
 description = 'A unified type for optional and error-prone procedures in Java.'
 

@@ -23,7 +23,7 @@ public final class WithResourceTest {
         final TestFlag flag = new TestFlag();
 
         assertDoesNotThrow(() ->
-            Result.<TestCloseableResource, Throwable>with(() -> { throw new NullPointerException(); })
+            Result.<TestCloseableResource>with(() -> { throw new NullPointerException(); })
                 .suppress(t -> { flag.set(true); return ""; }));
 
         assertFalse(flag.isFlagged());

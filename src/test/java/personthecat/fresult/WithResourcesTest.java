@@ -24,7 +24,7 @@ public final class WithResourcesTest {
     public void withResources_supplierHandlesException() {
         final TestFlag flag = new TestFlag();
 
-        final WithResource<TestCloseableResource, Throwable> r1 =
+        final WithResource<TestCloseableResource> r1 =
             Result.with(() -> { throw new NullPointerException(); });
 
         assertDoesNotThrow(() ->

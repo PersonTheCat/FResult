@@ -394,13 +394,12 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
      * </pre>
      *
      * @param <R> The type of resource being consumed by the wrapper.
-     * @param <E> The type of error being consumed by the wrapper.
      * @param resource An expression which yields an {@link AutoCloseable} resource.
      * @return A handle for interacting with the given resource.
      */
     @CheckReturnValue
-    static <R extends AutoCloseable, E extends Throwable>
-    WithResource<R, E> with(final ThrowingSupplier<R, E> resource) {
+    static <R extends AutoCloseable>
+    WithResource<R> with(final ThrowingSupplier<R, Throwable> resource) {
         return new WithResource<>(resource);
     }
 
@@ -427,9 +426,10 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
      * @return A result which may either be a value or an error.
      */
     @CheckReturnValue
+    @SuppressWarnings("unchecked")
     static <R extends AutoCloseable, T, E extends Throwable>
     Pending<T, E> with(final ThrowingSupplier<R, E> resource, final ThrowingFunction<R, T, E> attempt) {
-        return with(resource).of(attempt);
+        return with((ThrowingSupplier<R, Throwable>) resource).of(attempt);
     }
 
     /**
@@ -447,9 +447,10 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
      * @return A result which may either be a value or an error.
      */
     @CheckReturnValue
+    @SuppressWarnings("unchecked")
     static <R extends AutoCloseable, E extends Throwable>
     Pending<Void, E> with(final ThrowingSupplier<R, E> resource, final ThrowingConsumer<R, E> attempt) {
-        return with(resource).of(attempt);
+        return with((ThrowingSupplier<R, Throwable>) resource).of(attempt);
     }
 
     /**

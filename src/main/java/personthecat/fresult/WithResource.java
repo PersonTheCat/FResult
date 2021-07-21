@@ -12,14 +12,13 @@ import java.util.Optional;
  * Equivalent to using try-with-resources.
  *
  * @param <R> The resource being consumed and closed by this handler.
- * @param <E> The type of error to be caught by the handler.
  */
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public class WithResource<R extends AutoCloseable, E extends Throwable> {
+public class WithResource<R extends AutoCloseable> {
 
-    private final ThrowingSupplier<R, E> rGetter;
+    private final ThrowingSupplier<R, Throwable> rGetter;
 
-    WithResource(final ThrowingSupplier<R, E> rGetter) {
+    WithResource(final ThrowingSupplier<R, Throwable> rGetter) {
         this.rGetter = rGetter;
     }
 
@@ -32,10 +31,10 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
      * @param attempt A function which consumes the resource and either returns a
      *                value or throws an exception.
      * @param <T> The type of value being returned by the wrapper.
-     * @param <E2> The type of exception thrown by the resource getter.
+     * @param <E> The type of exception thrown by the resource getter.
      * @return A result which may either be a value or an error.
      */
-    public <T, E2 extends E> Result.Pending<T, E> of(final ThrowingFunction<R, T, E2> attempt) {
+    public <T, E extends Throwable> Result.Pending<T, E> of(final ThrowingFunction<R, T, E> attempt) {
         return Result.of(() -> this.execute(attempt));
     }
 
@@ -44,10 +43,10 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
      *
      * @param attempt A function which consumes the resource and may throw an
      *                exception.
-     * @param <E2> The type of exception thrown by the resource getter.
+     * @param <E> The type of exception thrown by the resource getter.
      * @return A result which may either be OK or an error.
      */
-    public <E2 extends E> Result.Pending<Void, E> of(final ThrowingConsumer<R, E2> attempt) {
+    public <E extends Throwable> Result.Pending<Void, E> of(final ThrowingConsumer<R, E> attempt) {
         return this.of(Result.wrapVoid(attempt));
     }
 
@@ -59,10 +58,10 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
      * @param attempt A function which consumes the resource and either returns a
      *                value or throws <b>any</b> type of exception.
      * @param <T> The type of value being returned by the wrapper.
-     * @param <E2> The type of exception thrown by the resource getter.
+     * @param <E> The type of exception thrown by the resource getter.
      * @return A result which may either be a value or <b>any</b> error.
      */
-    public <T, E2 extends E> Result<T, Throwable> suppress(final ThrowingFunction<R, T, E2> attempt) {
+    public <T, E extends Throwable> Result<T, Throwable> suppress(final ThrowingFunction<R, T, E> attempt) {
         return Result.suppress(() -> this.execute(attempt));
     }
 
@@ -73,10 +72,10 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
      * @see WithResource#suppress(ThrowingFunction)
      * @param attempt A function which consumes the resource any either returns a
      *                value or throws <b>any</b> type of exception.
-     * @param <E2> The type of exception thrown by the resource getter.
+     * @param <E> The type of exception thrown by the resource getter.
      * @return A result which may either be a value or <b>any</b> error.
      */
-    public <E2 extends E> Result<Void, Throwable> suppress(final ThrowingConsumer<R, E2> attempt) {
+    public <E extends Throwable> Result<Void, Throwable> suppress(final ThrowingConsumer<R, E> attempt) {
         return this.suppress(Result.wrapVoid(attempt));
     }
 
@@ -86,10 +85,10 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
      * @param attempt A function which consumes the resource and either returns a
      *                value, throws an exception, or returns null.
      * @param <T> The type of value being returned by the wrapper.
-     * @param <E2> The type of exception thrown by the resource getter.
+     * @param <E> The type of exception thrown by the resource getter.
      * @return A result which may either be a value, error, or null.
      */
-    public <T, E2 extends E> PartialOptionalResult<T, E> nullable(final ThrowingFunction<R, T, E2> attempt) {
+    public <T, E extends Throwable> PartialOptionalResult<T, E> nullable(final ThrowingFunction<R, T, E> attempt) {
         return Result.nullable(() -> execute(attempt));
     }
 
@@ -100,11 +99,11 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
      * @param attempt A function which consumes the resource and either returns a
      *                value, throws an exception, or returns null.
      * @param <T> The type of value being returned by the wrapper.
-     * @param <E2> The type of exception thrown by the resource getter.
+     * @param <E> The type of exception thrown by the resource getter.
      * @return A result which may either be a value, error, or null.
      */
-    public <T, E2 extends E> PartialOptionalResult<T, E> nullable(final ThrowingOptionalFunction<R, T, E2> attempt) {
-        return this.nullable((ThrowingFunction<R, T, E2>) r -> attempt.apply(r).orElse(null));
+    public <T, E extends Throwable> PartialOptionalResult<T, E> nullable(final ThrowingOptionalFunction<R, T, E> attempt) {
+        return this.nullable((ThrowingFunction<R, T, E>) r -> attempt.apply(r).orElse(null));
     }
 
     /**
@@ -114,10 +113,10 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
      * @param attempt A function which consumes the resource and either returns a
      *                value, throws <b>any</b> exception, or returns null.
      * @param <T> The type of value being returned by the wrapper.
-     * @param <E2> The type of exception thrown by the resource getter.
+     * @param <E> The type of exception thrown by the resource getter.
      * @return A result which may either be a value, <b>any</b> error, or null.
      */
-    public <T, E2 extends E> OptionalResult<T, Throwable> suppressNullable(final ThrowingFunction<R, T, E2> attempt) {
+    public <T, E extends Throwable> OptionalResult<T, Throwable> suppressNullable(final ThrowingFunction<R, T, E> attempt) {
         return Result.suppressNullable(() -> execute(attempt));
     }
 
@@ -128,11 +127,11 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
      * @param attempt A function which consumes the resource and either returns a
      *                value, throws <b>any</b> exception, or returns null.
      * @param <T> The type of value being returned by the wrapper.
-     * @param <E2> The type of exception thrown by the resource getter.
+     * @param <E> The type of exception thrown by the resource getter.
      * @return A result which may either be a value, <b>any</b> error, or null.
      */
-    public <T, E2 extends E> OptionalResult<T, Throwable> suppressNullable(final ThrowingOptionalFunction<R, T, E2> attempt) {
-        return this.suppressNullable((ThrowingFunction<R, T, E2>) r -> attempt.apply(r).orElse(null));
+    public <T, E extends Throwable> OptionalResult<T, Throwable> suppressNullable(final ThrowingOptionalFunction<R, T, E> attempt) {
+        return this.suppressNullable((ThrowingFunction<R, T, E>) r -> attempt.apply(r).orElse(null));
     }
 
     /**
@@ -142,7 +141,7 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
      *                 throws an exception.
      * @return A new wrapper containing getters for both resources.
      */
-    public <R2 extends AutoCloseable> WithResources<R, R2, E> and(final ThrowingSupplier<R2, E> resource) {
+    public <R2 extends AutoCloseable> WithResources<R, R2> and(final ThrowingSupplier<R2, Throwable> resource) {
         return new WithResources<>(rGetter, resource);
     }
 
@@ -153,7 +152,7 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
      *               second, and may throw an exception.
      * @return A new wrapper containing getters for both resources.
      */
-    public <R2 extends AutoCloseable> WithResources<R, R2, E> and(final ThrowingFunction<R, R2, E> getter) {
+    public <R2 extends AutoCloseable> WithResources<R, R2> and(final ThrowingFunction<R, R2, Throwable> getter) {
         return new WithResources<>(rGetter, () -> getter.apply(rGetter.get()));
     }
 
@@ -163,10 +162,10 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
      * @throws E If an error occurs.
      * @param attempt The procedure to attempt running which consumes the resource.
      * @param <T> The type of value being returned by the wrapper.
-     * @param <E2> The type of exception thrown by the resource getter.
+     * @param <E> The type of exception thrown by the resource getter.
      * @return The value expected by the wrapper.
      */
-    private <T, E2 extends E> T execute(final ThrowingFunction<R, T, E2> attempt) throws E {
+    private <T, E extends Throwable> T execute(final ThrowingFunction<R, T, E> attempt) throws E {
         try (R r = this.rGetter.get()) {
             return attempt.apply(r);
         } catch (Throwable e) {

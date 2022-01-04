@@ -59,7 +59,7 @@ import static personthecat.fresult.Shorthand.f;
  * @param <T> The type of data being consumed by the wrapper.
  * @param <E> The type of error being consumed by the wrapper.
  */
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "UnusedReturnValue"})
 public interface PartialOptionalResult<T, E extends Throwable> extends BasicResult<T, E> {
 
     /**
@@ -170,7 +170,7 @@ public interface PartialOptionalResult<T, E extends Throwable> extends BasicResu
      * @param args A series of interpolated arguments (replacing <code>{}</code>).
      * @throws ResultUnwrapException If a value or an error is present.
      */
-    default void expectEmptyF(final String message, final Object... args) {
+    default void expectEmpty(final String message, final Object... args) {
         this.expectEmpty(f(message, args));
     }
 
@@ -195,7 +195,7 @@ public interface PartialOptionalResult<T, E extends Throwable> extends BasicResu
      * @param args A series of interpolated arguments (replacing <code>{}</code>).
      * @return The underlying error.
      */
-    default Throwable expectErrF(final String message, final Object... args) {
+    default Throwable expectErr(final String message, final Object... args) {
         return this.expectErr(f(message, args));
     }
 

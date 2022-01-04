@@ -5,7 +5,6 @@ import personthecat.fresult.exception.WrongErrorException;
 import personthecat.fresult.functions.*;
 
 import javax.annotation.CheckReturnValue;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -24,75 +23,83 @@ import static personthecat.fresult.Shorthand.warn;
 import static personthecat.fresult.Shorthand.wrongErrorEx;
 
 /**
- * <h3>
- *   A counterpart to {@link Optional} used for neatly handling errors. Accepts
- * an expression which is not processed until a procedure for handling any
- * potential errors is implemented.
- * </h3><p>
- *   This class provides a functional interface capable of completely replacing
- * the standard try-catch and try-with-resources notations in Java. It has two
- * essential modes of use:
+ * <h2>
+ *   A powerful and expressive counterpart to {@link Optional} use for neatly
+ *   handling errors.
+ * </h2><p>
+ *   This interface is capable of completely replacing the standard try-catch
+ *   and try-with-resources notations in java. It has two essential modes of
+ *   use:
  * </p><ol>
  *     <li>As a better return type for functions that use standard error handling
  *         procedures, and</li>
  *     <li>As a wrapper around functions that do not.</li>
- * </ol><p>
- *   Basic implementations for each of the above use-cases are as follows:
- * </p><pre>
- *   // Return the product of each block.
- *   static Result<String, IOException> betterReturn() {
- *     final File f = getFile();
- *     try {
- *       return Result.ok(getContents(f));
- *     } catch (IOException e) {
- *       return Result.err(e);
+ * </ol><h2>
+ *     Using {@link Result} as a better return type
+ * </h2><pre>
+ *     // Return the product of each block.
+ *     public static Result<String, IOException> betterReturn() {
+ *       final File f = getFile();
+ *       try {
+ *         return Result.ok(getContents(f));
+ *       } catch (final IOException e) {
+ *         return Result.err(e);
+ *       }
  *     }
- *   }
  *
- *   // Standard conventions to be wrapped.
- *   static String toWrap() throws IOException {
- *     final File f = getFile();
- *     return getContents(f);
- *   }
+ *     // Create and return a new error directly.
+ *     public static Result<String, IOException> betterReturnAlt() {
+ *       final File f = getFile();
+ *       return testConditions(f)
+ *         ? Result.ok(getContents(f))
+ *         : Result.err(new IOException());
+ *     }
+ * </pre><h3>
+ *     Implementation
+ * </h3><pre>
+ *     // Handle all outcome scenarios.
+ *     final Result<String, IOException> r1 = betterReturn()
+ *       .ifErr(Result::WARN) // Output a warning message
+ *       .ifOk(ContentConsumer::apply); // Consume the text output
  *
- *   // Create and return a new error directly.
- *   static Result<String, IOException> betterReturnAlt() {
- *     final File f = getFile();
- *     return testConditions()
- *       ? Result.ok(getContents(f))
- *       : Result.err(new IOException());
- *   }
+ *     // Transform the data into a common type.
+ *     final int numLines = r1
+ *       .fold(t -> t.lines().size(), e -> 0);
+ *
+ *     // Immediately supply an alternate value.
+ *     final String output = betterReturnAlt()
+ *       .orElseGet(String::new);
+ *
+ *     // Map the underlying data to a new type.
+ *     final int hashCode = betterReturnAlt()
+ *       .map(Object::hashCode)
+ *       .orElse(0);
+ * </pre><h2>
+ *     Using {@link Result} as a try-catch wrapper
+ * </h2><pre>
+ *     // Standard conventions to be wrapped.
+ *     public static String toWrap() throws IOException {
+ *       final File f = getFile();
+ *       return getContents(f);
+ *     }
+ * </pre><h3>
+ *     Implementation
+ * </h3><pre>
+ *     // Generate instructions for wrapping this method.
+ *     final PartialResult<String, IOException> r1 = Result.of(Name::toWrap);
+ *
+ *     // Consume these instructions and get a Result<T, E>.
+ *     final Result<String, IOException> r2 = r1.ifErr(e -> log.warn("Oops!"));
  * </pre><p>
- *   The code which makes use of these functions would be identical in either
- * case, as follows:
- * </p><pre>{@code
- *   Result<String, IOException> r1 = betterReturn();
- *   Result<String, IOException> r2 = Result.of(Name::toWrap);
- * }</pre><p>
- *   It is worth noting that the above code always produces a new wrapper, but
- * is not guaranteed to execute. It is thereby essential that functions returning
- * new wrappers be followed by some type of handler, e.g. {@link #ifErr} or
- * {@link #expect}.
- * </p><p>
- *   Wrapping error-prone procedures in a functional interface has the modest
- * benefit of being more expressive and easier to maintain. It gives callers a
- * more convenient interface for supplying alternate values and reporting errors
- * to the end-user. However, this comes at a cost. It is certainly less safe and
- * less specific than vanilla error handling in Java, as it sometimes requires a
- * bit of runtime reflection and only accepts one error parameter by default. It
- * also requires a bit of memory overhead which likely has at least a minor
- * impact on performance. Some may consider functional error handling to be more
- * readable than imperative error handling, but this may not apply for most Java
- * developers, as it strays from the standard conventions they're used to and is
- * thus a bit of an outlier in that world.
+ *     Note that in order to use a {@link PartialResult} as a regular {@link Result},
+ *     <b>you must call {@link #ifErr}</b> or another such which can consume the error.
  * </p>
- *
  * @param <T> The type of value being wrapped.
  * @param <E> The type of error being wrapped.
  * @author PersonTheCat
  */
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Serializable {
+public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
 
     /**
      * Accepts an error and ignores it, while still coercing it to its lowest type, thus
@@ -176,7 +183,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      */
     @CheckReturnValue
     @SuppressWarnings("unchecked")
-    static <T, E extends Throwable> OptionalResult<T, E> empty() {
+    static <T, E extends Throwable> Empty<T, E> empty() {
         return (Empty<T, E>) Empty.INSTANCE;
     }
 
@@ -597,6 +604,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      *
      * @return true, if an error is present.
      */
+    @Override
     @CheckReturnValue
     boolean isErr();
 
@@ -610,6 +618,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param f A function consuming the error, if present.
      * @return This, or else a complete {@link Result}.
      */
+    @Override
     Result<T, E> ifErr(final Consumer<E> f);
 
     /**
@@ -626,6 +635,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      *
      * @return true, if a value is present.
      */
+    @Override
     @CheckReturnValue
     boolean isOk();
 
@@ -637,6 +647,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param f A function consuming the value, if present.
      * @return This, or else a complete {@link Result}.
      */
+    @Override
     Result<T, E> ifOk(final Consumer<T> f);
 
     /**
@@ -646,6 +657,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      *
      * @return The underlying value, wrapped in {@link Optional}.
      */
+    @Override
     @CheckReturnValue
     Optional<T> get();
 
@@ -654,6 +666,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      *
      * @return The underlying error, wrapped in {@link Optional}.
      */
+    @Override
     @CheckReturnValue
     Optional<E> getErr();
 
@@ -690,6 +703,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      *
      * @return The underlying value, or else the input.
      */
+    @Override
     @CheckReturnValue
     T orElse(final T val);
 
@@ -701,6 +715,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      *             wrapper.
      * @return The underlying value, or else func.get().
      */
+    @Override
     @CheckReturnValue
     T orElseGet(final Supplier<T> f);
 
@@ -737,6 +752,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @return The pending result of the new function, if an error is present,
      *         or else a complete {@link Result}.
      */
+    @Override
     @CheckReturnValue
     PartialResult<T, E> orElseTry(final ThrowingSupplier<T, E> f);
 
@@ -759,6 +775,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param f A new function to attempt in the presence of an error.
      * @return A result which may contain either a value or <b>any</b> error.
      */
+    @Override
     @CheckReturnValue
     default Result<T, Throwable> orElseTry(final Protocol protocol, final ThrowingSupplier<T, Throwable> f) {
         return this.orElseTry(protocol, e -> f.get());
@@ -803,6 +820,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param f The mapper applied to the value.
      * @return A new Result with its value mapped.
      */
+    @Override
     @CheckReturnValue
     <M> Result<M, E> map(final Function<T, M> f);
 
@@ -813,6 +831,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param f The mapper applied to the error.
      * @return A new Result with its error mapped.
      */
+    @Override
     @CheckReturnValue
     <E2 extends Throwable> Result<T, E2> mapErr(final Function<E, E2> f);
 
@@ -832,6 +851,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param f A function which yields a new Result wrapper if a value is present.
      * @return The new function yielded, if a value is present, else this.
      */
+    @Override
     @CheckReturnValue
     <M> OptionalResult<M, E> flatMap(final OptionalResultFunction<T, M, E> f);
 
@@ -853,6 +873,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @return The new function yielded, if an error is present, or else a complete
      *         {@link Result}.
      */
+    @Override
     @CheckReturnValue
     <E2 extends Throwable> OptionalResult<T, E2> flatMapErr(final OptionalResultFunction<E, T, E2> f);
 
@@ -869,8 +890,27 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param f A predicate which determines whether to keep the underlying value, if present.
      * @return A new result with no value, or else this.
      */
+    @Override
     @CheckReturnValue
     OptionalResult<T, E> filter(final Predicate<T> f);
+
+    /**
+     * Variant of {@link #filter(Predicate)} which converts the filtered value into an error.
+     *
+     * <p>e.g.</p>
+     * <pre>
+     *   Result.of(() -> "Hello, world!") // Value is present
+     *     .filter(String::isEmpty, Throwable::new)
+     *     .unwrapErr(); // No exception is thrown.
+     * </pre>
+     *
+     * @param f A predicate which determines whether to keep the underlying value, if present.
+     * @param err Supplies a default error if the predicate is matched.
+     * @return A new result with an error, or else this.
+     */
+    @Override
+    @CheckReturnValue
+    Result<T, E> filter(final Predicate<T> f, final Supplier<E> err);
 
     /**
      * Filters the underlying error out of the wrapper based on the given condition.
@@ -885,8 +925,27 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param f A predicate which determines whether to keep the underlying error, if present.
      * @return A new result with no error, or else this.
      */
+    @Override
     @CheckReturnValue
     OptionalResult<T, E> filterErr(final Predicate<E> f);
+
+    /**
+     * Variant of {@link #filterErr(Predicate)} which converts the filtered error into a value.
+     *
+     * <p>e.g.</p>
+     * <pre>
+     *   Result.&lt;Integer, Exception&gt;of(() -> throwException()) // Error is present
+     *     .filterErr(e -> false, () -> 0) // Error is removed.
+     *     .unwrap(); // No exception is thrown.
+     * </pre>
+     *
+     * @param f A predicate which determines whether to keep the underlying error, if present.
+     * @param val Supplies a default value if the predicate is matched.
+     * @return A new result with a value, or else this.
+     */
+    @Override
+    @CheckReturnValue
+    Result<T, E> filterErr(final Predicate<E> f, final Supplier<T> val);
 
     /**
      * Consumes an event to run in the event of success in this wrapper.
@@ -901,6 +960,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param <M> The new type of value being consumed by the wrapper.
      * @return A new result containing the output of this function, or else this.
      */
+    @Override
     @CheckReturnValue
     <M> Result<M, E> andThen(final Function<T, M> f);
 
@@ -919,6 +979,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param <M> The new type of value being consumed by the wrapper.
      * @return A new result containing the output of this function, or else this.
      */
+    @Override
     @CheckReturnValue
     <M> PartialResult<M, E> andThenTry(final ThrowingFunction<T, M, E> attempt);
 
@@ -930,6 +991,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param <M> The new type of value being consumed by the wrapper.
      * @return A new result containing the output of this function, or else this.
      */
+    @Override
     @CheckReturnValue
     <M> Result<M, Throwable> andThenSuppress(final ThrowingFunction<T, M, Throwable> attempt);
 
@@ -939,6 +1001,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param f The event to run, if OK.
      * @return A new result containing the output of this function, or else this.
      */
+    @Override
     Result<Void, E> andThen(final Runnable f);
 
     /**
@@ -948,6 +1011,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param attempt The next procedure to attempt, if OK.
      * @return A new result containing the output of this function, or else this.
      */
+    @Override
     @CheckReturnValue
     PartialResult<Void, E> andThenTry(final ThrowingRunnable<E> attempt);
 
@@ -958,6 +1022,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param attempt The next procedure to attempt, if OK.
      * @return A new result containing the output of this function, or else this.
      */
+    @Override
     @CheckReturnValue
     Result<Void, Throwable> andThenSuppress(final ThrowingRunnable<Throwable> attempt);
 
@@ -967,6 +1032,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @throws ResultUnwrapException If no error is present to be unwrapped.
      * @return The underlying error.
      */
+    @Override
     @CheckReturnValue
     default E unwrapErr() {
         return this.expectErr("Attempted to unwrap a result with no error.");
@@ -979,6 +1045,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param message The message to display in the event of an error.
      * @return The underlying error.
      */
+    @Override
     @CheckReturnValue
     E expectErr(final String message);
 
@@ -990,8 +1057,9 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param args A series of interpolated arguments (replacing <code>{}</code>).
      * @return The underlying error.
      */
+    @Override
     @CheckReturnValue
-    default E expectErrF(final String message, final Object... args) {
+    default E expectErr(final String message, final Object... args) {
         return this.expectErr(f(message, args));
     }
 
@@ -1001,6 +1069,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @throws E The original error, if present.
      * @return The underlying value.
      */
+    @Override
     default T orElseThrow() throws E {
         this.throwIfErr();
         return unwrap();
@@ -1011,6 +1080,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      *
      * @throws E The original error, if present.
      */
+    @Override
     void throwIfErr() throws E;
 
     /**
@@ -1019,7 +1089,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param <T> The type of value being wrapped
      * @param <E> A dummy parameter for the call site
      */
-    class Value<T, E extends Throwable> implements PartialResult<T, E>, Result<T, E>, OptionalResult<T, E> {
+    class Value<T, E extends Throwable> implements PartialResult<T, E>, Result<T, E> {
 
         private static final Value<Void, ?> OK = new Value<>(Void.INSTANCE);
         private static final long serialVersionUID = 2L;
@@ -1045,15 +1115,6 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
          */
         @Override
         @Deprecated
-        public Value<T, E> defaultIfEmpty(final Supplier<T> defaultGetter) {
-            return this;
-        }
-
-        /**
-         * @deprecated Always returns this.
-         */
-        @Override
-        @Deprecated
         public Value<T, E> errIfEmpty(final Supplier<E> defaultGetter) {
             return this;
         }
@@ -1065,15 +1126,6 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         @Deprecated
         public boolean isEmpty() {
             return false;
-        }
-
-        /**
-         * @deprecated Never runs..
-         */
-        @Override
-        @Deprecated
-        public Value<T, E> ifEmpty(final Runnable f) {
-            return this;
         }
 
         /**
@@ -1198,7 +1250,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
          * @deprecated Call {@link Value#expose} instead.
          */
         @Override
-        public T expectF(final String message, final Object... args) {
+        public T expect(final String message, final Object... args) {
             return this.value;
         }
 
@@ -1216,26 +1268,8 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
          */
         @Override
         @Deprecated
-        public E expectErrF(final String message, final Object... args) {
+        public E expectErr(final String message, final Object... args) {
             throw unwrapEx(f(message, args));
-        }
-
-        /**
-         * @deprecated Always fails.
-         */
-        @Override
-        @Deprecated
-        public void expectEmpty(final String message) {
-            throw new ResultUnwrapException(message);
-        }
-
-        /**
-         * @deprecated always fails.
-         */
-        @Override
-        @Deprecated
-        public void expectEmptyF(final String message, final Object... args) {
-            throw new ResultUnwrapException(f(message, args));
         }
 
         /**
@@ -1253,6 +1287,56 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         @Override
         @Deprecated
         public void throwIfErr() {}
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("deprecation")
+        public Value<T, E> defaultIfEmpty(final Supplier<T> defaultGetter) {
+            return this;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("deprecation")
+        public Value<T, E> ifEmpty(final Runnable f) {
+            return this;
+        }
+
+        /**
+         * @deprecated Always fails.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("deprecation")
+        public void assertEmpty() {
+            throw unwrapEx("Result contains a value");
+        }
+
+        /**
+         * @deprecated Always fails.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("deprecation")
+        public void expectEmpty(final String message) {
+            throw unwrapEx(message);
+        }
+
+        /**
+         * @deprecated Always fails.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("deprecation")
+        public void expectEmpty(final String message, final Object... args) {
+            throw unwrapEx(f(message, args));
+        }
 
         /**
          * @deprecated Call {@link Value#expose} instead.
@@ -1389,12 +1473,26 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
             return f.test(this.value) ? this : Result.empty();
         }
 
+        @Override
+        public Result<T, E> filter(final Predicate<T> f, final Supplier<E> err) {
+            return f.test(this.value) ? this : Result.err(err.get());
+        }
+
         /**
          * @deprecated Always returns this.
          */
         @Override
         @Deprecated
-        public OptionalResult<T, E> filterErr(final Predicate<E> f) {
+        public Value<T, E> filterErr(final Predicate<E> f) {
+            return this;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        public Value<T, E> filterErr(final Predicate<E> f, final Supplier<T> val) {
             return this;
         }
 
@@ -1448,15 +1546,6 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         public E unwrapErr() {
             throw unwrapEx("Attempted to unwrap a result with no error.");
         }
-
-        /**
-         * @deprecated Always fails.
-         */
-        @Override
-        @Deprecated
-        public void assertEmpty() {
-            throw new AssertionError("Wrapper contains a value.");
-        }
     }
 
     /**
@@ -1465,7 +1554,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
      * @param <T> A dummy parameter for the call site
      * @param <E> The type of error being wrapped
      */
-    class Error<T, E extends Throwable> implements PartialResult<T, E>, Result<T, E>, OptionalResult<T, E> {
+    class Error<T, E extends Throwable> implements PartialResult<T, E>, Result<T, E> {
 
         private static final long serialVersionUID = 2L;
 
@@ -1490,15 +1579,6 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
          */
         @Override
         @Deprecated
-        public Error<T, E> defaultIfEmpty(final Supplier<T> defaultGetter) {
-            return this;
-        }
-
-        /**
-         * @deprecated Always returns this.
-         */
-        @Override
-        @Deprecated
         public Error<T, E> errIfEmpty(final Supplier<E> defaultGetter) {
             return this;
         }
@@ -1510,15 +1590,6 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         @Deprecated
         public boolean isEmpty() {
             return false;
-        }
-
-        /**
-         * @deprecated Always returns this.
-         */
-        @Override
-        @Deprecated
-        public Error<T, E> ifEmpty(final Runnable f) {
-            return this;
         }
 
         /**
@@ -1651,7 +1722,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
          */
         @Override
         @Deprecated
-        public T expectF(final String message, final Object... args) {
+        public T expect(final String message, final Object... args) {
             throw unwrapEx(f(message, args));
         }
 
@@ -1669,26 +1740,8 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
          */
         @Override
         @Deprecated
-        public E expectErrF(final String message, final Object... args) {
+        public E expectErr(final String message, final Object... args) {
             return this.error;
-        }
-
-        /**
-         * @deprecated Always fails.
-         */
-        @Override
-        @Deprecated
-        public void expectEmpty(final String message) {
-            throw new ResultUnwrapException(message);
-        }
-
-        /**
-         * @deprecated Always fails.
-         */
-        @Override
-        @Deprecated
-        public void expectEmptyF(final String message, final Object... args) {
-            throw new ResultUnwrapException(f(message, args));
         }
 
         /**
@@ -1707,6 +1760,56 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         @Deprecated
         public void throwIfErr() throws E {
             throw this.error;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("deprecation")
+        public Error<T, E> defaultIfEmpty(final Supplier<T> defaultGetter) {
+            return this;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("deprecation")
+        public Error<T, E> ifEmpty(final Runnable f) {
+            return this;
+        }
+
+        /**
+         * @deprecated Always fails.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("deprecation")
+        public void assertEmpty() {
+            throw unwrapEx("Result contains an error.");
+        }
+
+        /**
+         * @deprecated Always fails.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("deprecation")
+        public void expectEmpty(final String message) {
+            throw unwrapEx(message);
+        }
+
+        /**
+         * @deprecated Always fails.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("deprecation")
+        public void expectEmpty(final String message, final Object... args) {
+            throw unwrapEx(f(message, args));
         }
 
         @Override
@@ -1828,9 +1931,23 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
             return this;
         }
 
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        public Error<T, E> filter(final Predicate<T> f, final Supplier<E> err) {
+            return this;
+        }
+
         @Override
         public OptionalResult<T, E> filterErr(final Predicate<E> f) {
             return f.test(this.error) ? this : Result.empty();
+        }
+
+        @Override
+        public Result<T, E> filterErr(final Predicate<E> f, final Supplier<T> val) {
+            return f.test(this.error) ? this : Result.ok(val.get());
         }
 
         /**
@@ -1909,15 +2026,6 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         @Deprecated
         public E unwrapErr() {
             return this.error;
-        }
-
-        /**
-         * @deprecated Always fails.
-         */
-        @Override
-        @Deprecated
-        public void assertEmpty() {
-            throw new AssertionError("Wrapper contains error.");
         }
     }
 
@@ -2129,7 +2237,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
          */
         @Override
         @Deprecated
-        public OptionalResult<T, E> filter(final Predicate<T> f) {
+        public Empty<T, E> filter(final Predicate<T> f) {
             return this;
         }
 
@@ -2138,8 +2246,86 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
          */
         @Override
         @Deprecated
-        public OptionalResult<T, E> filterErr(final Predicate<E> f) {
+        public OptionalResult<T, E> filter(final Predicate<T> f, final Supplier<E> err) {
             return this;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        public Empty<T, E> filterErr(final Predicate<E> f) {
+            return this;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        public OptionalResult<T, E> filterErr(final Predicate<E> f, final Supplier<T> val) {
+            return this;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("unchecked")
+        public <M> Empty<M, E> andThen(final Function<T, M> f) {
+            return (Empty<M, E>) this;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("unchecked")
+        public <M> Empty<M, E> andThenTry(final ThrowingFunction<T, M, E> attempt) {
+            return (Empty<M, E>) this;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("unchecked")
+        public <M> Empty<M, Throwable> andThenSuppress(final ThrowingFunction<T, M, Throwable> attempt) {
+            return (Empty<M, Throwable>) this;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("unchecked")
+        public Empty<Void, E> andThen(final Runnable f) {
+            return (Empty<Void, E>) this;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("unchecked")
+        public Empty<Void, E> andThenTry(final ThrowingRunnable<E> attempt) {
+            return (Empty<Void, E>) this;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        @SuppressWarnings("unchecked")
+        public Empty<Void, Throwable> andThenSuppress(final ThrowingRunnable<Throwable> attempt) {
+            return (Empty<Void, Throwable>) this;
         }
 
         /**
@@ -2190,7 +2376,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
          */
         @Override
         @Deprecated
-        public T expectF(final String message, final Object... args) {
+        public T expect(final String message, final Object... args) {
             throw new NullPointerException(f(message, args));
         }
 
@@ -2208,7 +2394,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
          */
         @Override
         @Deprecated
-        public E expectErrF(final String message, final Object... args) {
+        public E expectErr(final String message, final Object... args) {
             throw new NullPointerException(f(message, args));
         }
 
@@ -2224,7 +2410,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
          */
         @Override
         @Deprecated
-        public void expectEmptyF(final String message, final Object... args) {}
+        public void expectEmpty(final String message, final Object... args) {}
 
         /**
          * @deprecated Always throws NPE.
@@ -2269,6 +2455,15 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         private Pending(final ThrowingSupplier<T, E> resultGetter, final Supplier<Result<T, E>> defaultGetter) {
             this.resultGetter = resultGetter;
             this.defaultGetter = defaultGetter;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        public PartialResult<T, E> errIfEmpty(final Supplier<E> defaultGetter) {
+            return this;
         }
 
         /**

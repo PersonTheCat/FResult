@@ -13,7 +13,7 @@ import java.util.Optional;
  * @param <E> The type of error to be caught by the handler.
  */
 @SuppressWarnings("unused")
-class WithResources<R1 extends AutoCloseable, R2 extends AutoCloseable, E extends Throwable> {
+public class WithResources<R1 extends AutoCloseable, R2 extends AutoCloseable, E extends Throwable> {
 
     private final ThrowingSupplier<R1, E> r1Getter;
     private final ThrowingSupplier<R2, E> r2Getter;

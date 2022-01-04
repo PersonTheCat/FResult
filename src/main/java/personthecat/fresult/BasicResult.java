@@ -66,7 +66,7 @@ public interface BasicResult<T, E extends Throwable> {
      * @param args A series of interpolated arguments (replacing <code>{}</code>).
      * @return The underlying value
      */
-    default T expectF(final String message, final Object... args) {
+    default T expect(final String message, final Object... args) {
         return this.expect(f(message, args));
     }
 }

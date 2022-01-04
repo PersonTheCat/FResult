@@ -4,6 +4,7 @@ import personthecat.fresult.exception.ResultUnwrapException;
 import personthecat.fresult.exception.WrongErrorException;
 import personthecat.fresult.functions.OptionalResultFunction;
 import personthecat.fresult.functions.ThrowingFunction;
+import personthecat.fresult.functions.ThrowingRunnable;
 import personthecat.fresult.functions.ThrowingSupplier;
 
 import javax.annotation.CheckReturnValue;
@@ -236,8 +237,8 @@ public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E
      *
      * <p>e.g.</p>
      * <pre>
-     *   Result.of(() -> "Hello, world!) // Value is present
-     *     .filter(() -> false) // Value is removed.
+     *   Result.of(() -> "Hello, world!") // Value is present
+     *     .filter(t -> false) // Value is removed.
      *     .assertEmpty(); // No exception is thrown.
      * </pre>
      *
@@ -248,12 +249,29 @@ public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E
     OptionalResult<T, E> filter(final Predicate<T> f);
 
     /**
+     * Variant of {@link #filter(Predicate)} which converts the filtered value into an error.
+     *
+     * <p>e.g.</p>
+     * <pre>
+     *   Result.of(() -> "Hello, world!") // Value is present
+     *     .filter(String::isEmpty, Throwable::new)
+     *     .unwrapErr(); // No exception is thrown.
+     * </pre>
+     *
+     * @param f A predicate which determines whether to keep the underlying value, if present.
+     * @param err Supplies a default error if the predicate is matched.
+     * @return A new result with an error, or else this.
+     */
+    @CheckReturnValue
+    OptionalResult<T, E> filter(final Predicate<T> f, final Supplier<E> err);
+
+    /**
      * Filters the underlying error out of the wrapper based on the given condition.
      *
      * <p>e.g.</p>
      * <pre>
      *   Result.of(() -> throwException()) // Error is present
-     *     .filterErr(() -> false) // Error is removed.
+     *     .filterErr(e -> false) // Error is removed.
      *     .assertEmpty(); // No exception is thrown.
      * </pre>
      *
@@ -262,6 +280,96 @@ public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E
      */
     @CheckReturnValue
     OptionalResult<T, E> filterErr(final Predicate<E> f);
+
+    /**
+     * Variant of {@link #filterErr(Predicate)} which converts the filtered error into a value.
+     *
+     * <p>e.g.</p>
+     * <pre>
+     *   Result.&lt;Integer, Exception&gt;of(() -> throwException()) // Error is present
+     *     .filterErr(e -> false, () -> 0) // Error is removed.
+     *     .unwrap(); // No exception is thrown.
+     * </pre>
+     *
+     * @param f A predicate which determines whether to keep the underlying error, if present.
+     * @param val Supplies a default value if the predicate is matched.
+     * @return A new result with a value, or else this.
+     */
+    @CheckReturnValue
+    OptionalResult<T, E> filterErr(final Predicate<E> f, final Supplier<T> val);
+
+    /**
+     * Consumes an event to run in the event of success in this wrapper.
+     *
+     * <p>e.g.</p>
+     * <pre>
+     *   Result.any(() -> "Hello, world!") // Result is OK
+     *     .andThen(String::length); // becomes a Result&lt;Integer, E&gt;
+     * </pre>
+     *
+     * @param f The event to run, if OK.
+     * @param <M> The new type of value being consumed by the wrapper.
+     * @return A new result containing the output of this function, or else this.
+     */
+    @CheckReturnValue
+    <M> OptionalResult<M, E> andThen(final Function<T, M> f);
+
+    /**
+     * Variant of {@link #andThen(Function)} which may fail. <b>Any error returned by this
+     * event must be acknowledged</b>.
+     *
+     * <p>e.g.</p>
+     * <pre>
+     *   Result.any(() -> "Hello, world!) // Result is OK
+     *     .andThenTry(s -> throwException()) // Result is not OK
+     *     .ifErr(Result::WARN); // This problem will be logged.
+     * </pre>
+     *
+     * @param attempt The next procedure to attempt, if OK.
+     * @param <M> The new type of value being consumed by the wrapper.
+     * @return A new result containing the output of this function, or else this.
+     */
+    @CheckReturnValue
+    <M> PartialOptionalResult<M, E> andThenTry(final ThrowingFunction<T, M, E> attempt);
+
+    /**
+     * Variant of {@link #andThenTry} which is allowed to throw <b>any</b> exception.
+     * Returns a less restrictive wrapper.
+     *
+     * @param attempt The next procedure to attempt, if OK.
+     * @param <M> The new type of value being consumed by the wrapper.
+     * @return A new result containing the output of this function, or else this.
+     */
+    @CheckReturnValue
+    <M> OptionalResult<M, Throwable> andThenSuppress(final ThrowingFunction<T, M, Throwable> attempt);
+
+    /**
+     * Variant of {@link #andThen(Function)} which ignores the value in the wrapper.
+     *
+     * @param f The event to run, if OK.
+     * @return A new result containing the output of this function, or else this.
+     */
+    OptionalResult<Void, E> andThen(final Runnable f);
+
+    /**
+     * Variant of {@link #andThenTry(ThrowingFunction)} which ignores the value in
+     * the wrapper.
+     *
+     * @param attempt The next procedure to attempt, if OK.
+     * @return A new result containing the output of this function, or else this.
+     */
+    @CheckReturnValue
+    PartialOptionalResult<Void, E> andThenTry(final ThrowingRunnable<E> attempt);
+
+    /**
+     * Variant of {@link #andThenSuppress(ThrowingFunction)} which ignores the value
+     * in the wrapper.
+     *
+     * @param attempt The next procedure to attempt, if OK.
+     * @return A new result containing the output of this function, or else this.
+     */
+    @CheckReturnValue
+    OptionalResult<Void, Throwable> andThenSuppress(final ThrowingRunnable<Throwable> attempt);
 
     /**
      * Attempts to retrieve the underlying error, asserting that one must exist.
@@ -304,7 +412,7 @@ public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E
      * @param args A series of interpolated arguments (replacing <code>{}</code>).
      * @return The underlying error.
      */
-    default E expectErrF(final String message, final Object... args) {
+    default E expectErr(final String message, final Object... args) {
         return this.expectErr(f(message, args));
     }
 
@@ -323,7 +431,7 @@ public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E
      * @param args A series of interpolated arguments (replacing <code>{}</code>).
      * @throws ResultUnwrapException If a value or an error is present.
      */
-    default void expectEmptyF(final String message, final Object... args) {
+    default void expectEmpty(final String message, final Object... args) {
         this.expectEmpty(f(message, args));
     }
 

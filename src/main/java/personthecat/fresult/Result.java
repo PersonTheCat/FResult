@@ -1050,6 +1050,15 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         }
 
         /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        public Value<T, E> errIfEmpty(final Supplier<E> defaultGetter) {
+            return this;
+        }
+
+        /**
          * @deprecated Always returns false.
          */
         @Override
@@ -1482,6 +1491,15 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         @Override
         @Deprecated
         public Error<T, E> defaultIfEmpty(final Supplier<T> defaultGetter) {
+            return this;
+        }
+
+        /**
+         * @deprecated Always returns this.
+         */
+        @Override
+        @Deprecated
+        public Error<T, E> errIfEmpty(final Supplier<E> defaultGetter) {
             return this;
         }
 
@@ -1923,6 +1941,11 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
             return new Value<>(Objects.requireNonNull(defaultGetter.get(), "Default getter"));
         }
 
+        @Override
+        public Error<T, E> errIfEmpty(final Supplier<E> defaultGetter) {
+            return new Error<>(Objects.requireNonNull(defaultGetter.get(), "Default getter"));
+        }
+
         /**
          * @deprecated Always returns true.
          */
@@ -2236,14 +2259,14 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
     class Pending<T, E extends Throwable> implements PartialResult<T, E> {
 
         private final ThrowingSupplier<T, E> resultGetter;
-        private final Supplier<T> defaultGetter;
+        private final Supplier<Result<T, E>> defaultGetter;
         private volatile Result<T, E> result = null;
 
         private Pending(final ThrowingSupplier<T, E> getter) {
             this(getter, null);
         }
 
-        private Pending(final ThrowingSupplier<T, E> resultGetter, final Supplier<T> defaultGetter) {
+        private Pending(final ThrowingSupplier<T, E> resultGetter, final Supplier<Result<T, E>> defaultGetter) {
             this.resultGetter = resultGetter;
             this.defaultGetter = defaultGetter;
         }
@@ -2360,9 +2383,7 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
             if (value != null) {
                 return this.result = new Value<>(value);
             }
-            final Supplier<T> getter = Objects.requireNonNull(this.defaultGetter, "nonnull attempt");
-            final T defaultValue = Objects.requireNonNull(this.defaultGetter.get(), "default is null");
-            return this.result = new Value<>(defaultValue);
+            return this.result = Objects.requireNonNull(this.defaultGetter, "nonnull attempt").get();
         }
     }
 
@@ -2396,7 +2417,13 @@ public interface Result<T, E extends Throwable> extends BasicResult<T, E>, Seria
         @Override
         @CheckReturnValue
         public PartialResult<T, E> defaultIfEmpty(final Supplier<T> defaultGetter) {
-            return new Pending<>(this.resultGetter, defaultGetter);
+            return new Pending<>(this.resultGetter, () -> new Value<>(defaultGetter.get()));
+        }
+
+        @Override
+        @CheckReturnValue
+        public PartialResult<T, E> errIfEmpty(final Supplier<E> defaultGetter) {
+            return new Pending<>(this.resultGetter, () -> new Error<>(defaultGetter.get()));
         }
 
         @Override

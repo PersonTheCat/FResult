@@ -23,12 +23,23 @@ public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E
      * Consumes instructions for what to do if a given result contains no value. This
      * method eliminates any uncertainty surrounding whether null values can exist within
      * the wrapper. As a result, its type will be upgraded to a more permissive
-     * {@link PartialResult}.
+     * {@link Result}.
      *
      * @param defaultGetter Supplies a default value if the wrapper does not contain one.
-     * @return An upgraded {@link PartialResult} for handling unknown error types.
+     * @return An upgraded {@link Result} for handling known error types.
      */
     Result<T, E> defaultIfEmpty(final Supplier<T> defaultGetter);
+
+    /**
+     * Generates an error in the case where no value is present at all in this wrapper.
+     *
+     * <p>As with {@link #defaultIfEmpty(Supplier)}, this method eliminates the possibility
+     * of empty state, thus allowing it to return a standard {@link Result}.
+     *
+     * @param defaultGetter Supplies an error if the wrapper contains no value.
+     * @return An upgraded {@link Result} for handling known error types.
+     */
+    Result<T, E> errIfEmpty(final Supplier<E> defaultGetter);
 
     /**
      * Returns whether no value was returned in the process.

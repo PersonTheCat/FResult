@@ -74,6 +74,18 @@ public interface PartialOptionalResult<T, E extends Throwable> extends BasicResu
     PartialResult<T, E> defaultIfEmpty(final Supplier<T> defaultGetter);
 
     /**
+     * Generates an error in the case where no value is present at all in this wrapper.
+     *
+     * <p>As with {@link #defaultIfEmpty(Supplier)}, this method eliminates the possibility
+     * of empty state, thus allowing it to return a standard, {@link PartialResult partial
+     * result}.
+     *
+     * @param defaultGetter Supplies an error if the wrapper contains no value.
+     * @return An upgraded {@link PartialResult} for handling unknown error types.
+     */
+    PartialResult<T, E> errIfEmpty(final Supplier<E> defaultGetter);
+
+    /**
      * Consumes a procedure to be executed if no value is present in the wrapper.
      *
      * @param f A function to run if this wrapper contains no value.

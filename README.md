@@ -31,6 +31,15 @@ try-with-resources notations in Java. It has two essential modes of use:
 1. A better return type for functions that use standard error handling procedures
 2. A wrapper around functions that do not.
 
+## Installing
+
+FResult is available on Maven Central! To use it in your project, add the following
+dependency in your build.gradle or pom.xml:
+
+```groovy
+implementation group: 'com.personthecat', name: 'fresult', version: '3.0'
+```
+
 ## A Better Return Type
 
 Let's take a look at some examples of methods that use this new return type and

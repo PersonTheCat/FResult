@@ -1,13 +1,16 @@
+
+plugins {
+  id 'maven-publish'
+  id 'signing'
+}
+
 apply plugin: 'java'
 
-version = '2.0-BETA-5'
-group = 'PersonTheCat'
-description = 'A unified type for optional and error-prone procedures in Java.'
-
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17
 
 repositories {
+  mavenLocal()
   mavenCentral()
 }
 
@@ -32,10 +35,80 @@ sourceSets {
   }
 }
 
-test {
-    useJUnitPlatform()
+task javadocJar(type: Jar, dependsOn: javadoc) {
+  classifier 'javadoc'
+  from 'build/docs/javadoc'
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+  duplicatesStrategy DuplicatesStrategy.INCLUDE
+  classifier 'sources'
+  from sourceSets.main.allSource
+}
+
+tasks.withType(Test) {
+  useJUnitPlatform()
+  ignoreFailures = false
+  failFast = false
 }
 
 artifacts {
   archives jar
+  archives javadocJar
+  archives sourcesJar
+}
+
+java {
+  withJavadocJar()
+  withSourcesJar()
+}
+
+publishing {
+  repositories {
+    maven {
+      name = 'OSSRH'
+      url = 'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/'
+      credentials {
+        username = project.findProperty('ossrh.username') ?: System.getenv('OSSRH_USERNAME')
+        password = project.findProperty('ossrh.password') ?: System.getenv('OSSRH_PASSWORD')
+      }
+    }
+  }
+  publications {
+    mavenJava(MavenPublication) {
+      groupId = group
+      artifactId = pom_artifact_id
+      version = version
+
+      pom {
+        name = pom_name
+        description = pom_description
+        url = pom_url
+        licenses {
+          license {
+            name = pom_license_name
+            url = pom_license_url
+          }
+        }
+        developers {
+          developer {
+            id = pom_developer
+            name = pom_developer_name
+            email = pom_developer_email
+          }
+        }
+        scm {
+          connection = pom_scm_connection
+          developerConnection = pom_scm_developer_connection
+          url = pom_scm_url
+        }
+      }
+
+      from components.java
+    }
+  }
+}
+
+signing {
+  sign publishing.publications.mavenJava
 }

@@ -204,7 +204,7 @@ public class WithResources<R1 extends AutoCloseable, R2 extends AutoCloseable, E
     }
 
     /**
-     * Variant of {@link WithResources#nullable(ThrowingFunction) in which the return
+     * Variant of {@link WithResources#nullable(ThrowingFunction)} in which the return
      * value is wrapped in {@link Optional}.
      *
      * @param attempt A function which consumes the first resource and either returns a

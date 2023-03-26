@@ -38,7 +38,7 @@ import static personthecat.fresult.Shorthand.wrongErrorEx;
  *     Using {@link Result} as a better return type
  * </h2><pre>
  *     // Return the product of each block.
- *     public static Result<String, IOException> betterReturn() {
+ *     public static Result&lt;String, IOException&gt; betterReturn() {
  *       final File f = getFile();
  *       try {
  *         return Result.ok(getContents(f));
@@ -48,7 +48,7 @@ import static personthecat.fresult.Shorthand.wrongErrorEx;
  *     }
  *
  *     // Create and return a new error directly.
- *     public static Result<String, IOException> betterReturnAlt() {
+ *     public static Result&lt;String, IOException&gt; betterReturnAlt() {
  *       final File f = getFile();
  *       return testConditions(f)
  *         ? Result.ok(getContents(f))
@@ -58,7 +58,7 @@ import static personthecat.fresult.Shorthand.wrongErrorEx;
  *     Implementation
  * </h3><pre>
  *     // Handle all outcome scenarios.
- *     final Result<String, IOException> r1 = betterReturn()
+ *     final Result&lt;String, IOException&gt; r1 = betterReturn()
  *       .ifErr(Result::WARN) // Output a warning message
  *       .ifOk(ContentConsumer::apply); // Consume the text output
  *
@@ -86,10 +86,10 @@ import static personthecat.fresult.Shorthand.wrongErrorEx;
  *     Implementation
  * </h3><pre>
  *     // Generate instructions for wrapping this method.
- *     final PartialResult<String, IOException> r1 = Result.of(Name::toWrap);
+ *     final PartialResult&lt;String, IOException&gt; r1 = Result.of(Name::toWrap);
  *
- *     // Consume these instructions and get a Result<T, E>.
- *     final Result<String, IOException> r2 = r1.ifErr(e -> log.warn("Oops!"));
+ *     // Consume these instructions and get a Result&lt;T, E&gt;.
+ *     final Result&lt;String, IOException&gt; r2 = r1.ifErr(e -> log.warn("Oops!"));
  * </pre><p>
  *     Note that in order to use a {@link PartialResult} as a regular {@link Result},
  *     <b>you must call {@link #ifErr}</b> or another such which can consume the error.
@@ -295,7 +295,7 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
     }
 
     /**
-     * Variant of {@link #nullable(T)} in which <code>T</code> is wrapped in {@link Optional}.
+     * Variant of {@link #nullable(Object)} in which <code>T</code> is wrapped in {@link Optional}.
      *
      * @param value Any given value which may be empty.
      * @param <T> The type of value being consumed by the wrapper.
@@ -321,7 +321,7 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
      *     .expect("Error message!")
      * </pre>
      *
-     * @see Result#nullable(T)
+     * @see Result#nullable(Object)
      * @param attempt An expression which either yields a value or throws an error.
      * @param <T> The type of value being consumed by the wrapper.
      * @param <E> The type of error being consumed by the wrapper.
@@ -335,7 +335,7 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
     /**
      * Variant of {@link #nullable(ThrowingSupplier)} in which the supplier returns {@link Optional}.
      *
-     * @see Result#nullable(T)
+     * @see Result#nullable(Object)
      * @param attempt An expression which either yields a value or throws an error.
      * @param <T> The type of value being consumed by the wrapper.
      * @param <E> The type of error being consumed by the wrapper.
@@ -349,7 +349,7 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
     /**
      * Variant of {@link #suppress} which is allowed to contain null values.
      *
-     * @see Result#nullable(T)
+     * @see Result#nullable(Object)
      * @param attempt An expression which either yields a value, throws <b>any</b> error,
      *                or returns null.
      * @param <T> The type of value being consumed by the wrapper.
@@ -595,7 +595,7 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
      *
      * e.g.
      * <pre>
-     *   final Result<Void, RuntimeException> result = getResult();
+     *   final Result&lt;Void, RuntimeException>&gt; result = getResult();
      *   // Compute the result and proceed only if it errs.
      *   if (result.isErr()) {
      *       ...
@@ -626,12 +626,12 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
      *
      * <p>e.g.</p>
      * <pre>
-     *   final Result<Void, RuntimeException> result = getResult();
+     *   final Result&lt;Void, RuntimeException&gt; result = getResult();
      *   // Compute the result and proceed only if it does not err.
      *   if (result.isOk()) {
      *       ...
      *   }
-     * <pre>
+     * </pre>
      *
      * @return true, if a value is present.
      */
@@ -2592,7 +2592,7 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
      *   For example,
      * </p><pre>
      *   // A complete result which may never be null or contain a non-reifiable error.
-     *   final Result<String, RuntimeException> result = Result.nullable(() -> null)
+     *   final Result&lt;String, RuntimeException&gt; result = Result.nullable(() -> null)
      *     .defaultIfEmpty(() -> "Hello, World!") // Get a Result$Pending
      *     .ifErr(() -> log.warn("oops!)); // Get a complete Result.
      * </pre>

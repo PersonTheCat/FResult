@@ -34,7 +34,7 @@ import static personthecat.fresult.Shorthand.f;
  *   yields a {@link PartialResult}.
  * </p>
  * <pre>
- *   final PartialResult<String, RuntimeException> result = Result.nullable(() -> null)
+ *   final PartialResult&lt;String, RuntimeException&gt; result = Result.nullable(() -> null)
  *     .defaultIfEmpty(() -> "Hello, World!");
  * </pre>
  * <p>
@@ -42,7 +42,7 @@ import static personthecat.fresult.Shorthand.f;
  *   accomplished by calling {@link PartialOptionalResult#ifEmpty}.
  * </p>
  * <pre>
- *   final OptionalResult<String, RuntimeException> result = Result.nullable(() -> null)
+ *   final OptionalResult&lt;String, RuntimeException&gt; result = Result.nullable(() -> null)
  *     .ifEmpty(() -> {...});
  * </pre>
  * <p>
@@ -51,7 +51,7 @@ import static personthecat.fresult.Shorthand.f;
  *   to stop early if anything goes wrong:
  * </p>
  * <pre>
- *   final String result = Result.<String, RuntimeException>nullable(() -> null)
+ *   final String result = Result.&lt;String, RuntimeException&gt;nullable(() -> null)
  *     .expect("Error message!");
  * </pre>
  *
@@ -189,7 +189,7 @@ public interface PartialOptionalResult<T, E extends Throwable> extends BasicResu
     Throwable expectErr(final String message);
 
     /**
-     * @see PartialOptionalResult#expectErr(String).
+     * @see PartialOptionalResult#expectErr(String)
      * @throws ResultUnwrapException If no error is present to be unwrapped.
      * @param message The message to display in the event of an error.
      * @param args A series of interpolated arguments (replacing <code>{}</code>).

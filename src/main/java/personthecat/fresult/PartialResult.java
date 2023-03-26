@@ -165,7 +165,7 @@ public interface PartialResult<T, E extends Throwable> extends PartialOptionalRe
     Throwable expectErr(final String message);
 
     /**
-     * @see PartialOptionalResult#expectErr(String).
+     * @see PartialOptionalResult#expectErr(String)
      * @throws ResultUnwrapException If no error is present to be unwrapped.
      * @param message The message to display in the event of an error.
      * @param args A series of interpolated arguments (replacing <code>{}</code>).

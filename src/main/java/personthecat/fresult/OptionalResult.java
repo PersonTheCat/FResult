@@ -47,7 +47,7 @@ public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E
      *
      * e.g.
      * <pre>
-     *   final OptionalResult<Object, RuntimeException> result = getOptionalResult();
+     *   final OptionalResult&lt;Object, RuntimeException&gt; result = getOptionalResult();
      *   // Compute the result and proceed only if it returns null.
      *   if (result.isEmpty()) {
      *       ...
@@ -72,7 +72,7 @@ public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E
      *
      * e.g.
      * <pre>
-     *   final Result<Void, RuntimeException> result = getResult();
+     *   final Result&lt;Void, RuntimeException&gt; result = getResult();
      *   // Compute the result and proceed only if it errs.
      *   if (result.isErr()) {
      *       ...
@@ -101,12 +101,12 @@ public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E
      *
      * <p>e.g.</p>
      * <pre>
-     *   final Result<Void, RuntimeException> result = getResult();
+     *   final Result&lt;Void, RuntimeException&gt; result = getResult();
      *   // Compute the result and proceed only if it does not err.
      *   if (result.isOk()) {
      *       ...
      *   }
-     * <pre>
+     * </pre>
      *
      * @return true, if a value is present.
      */
@@ -406,7 +406,7 @@ public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E
     E expectErr(final String message);
 
     /**
-     * @see PartialOptionalResult#expectErr(String).
+     * @see PartialOptionalResult#expectErr(String)
      * @throws ResultUnwrapException If no error is present to be unwrapped.
      * @param message The message to display in the event of an error.
      * @param args A series of interpolated arguments (replacing <code>{}</code>).

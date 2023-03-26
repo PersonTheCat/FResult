@@ -14,7 +14,7 @@ public final class WithResourcesTest {
     public void withResources_closesResources() {
         final TestCloseableResource closeable1 = new TestCloseableResource();
         final TestCloseableResource closeable2 = new TestCloseableResource();
-        Result.with(() -> closeable1).and(c1 -> closeable2).suppress((c1, c2) -> {});
+        Result.with(() -> closeable1).with(c1 -> closeable2).suppress((c1, c2) -> {});
 
         assertTrue(closeable1.isClosed());
         assertTrue(closeable2.isClosed());
@@ -28,7 +28,7 @@ public final class WithResourcesTest {
             Result.with(() -> { throw new NullPointerException(); });
 
         assertDoesNotThrow(() ->
-            r1.<TestCloseableResource>and(() -> { throw new NullPointerException(); })
+            r1.<TestCloseableResource>with(() -> { throw new NullPointerException(); })
                 .suppress(t -> { flag.set(true); return ""; }));
 
         assertFalse(flag.isFlagged());

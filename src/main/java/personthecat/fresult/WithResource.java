@@ -142,7 +142,7 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
      *                 throws an exception.
      * @return A new wrapper containing getters for both resources.
      */
-    public <R2 extends AutoCloseable> WithResources<R, R2, E> and(final ThrowingSupplier<R2, E> resource) {
+    public <R2 extends AutoCloseable> WithResources<R, R2, E> with(final ThrowingSupplier<R2, E> resource) {
         return new WithResources<>(rGetter, resource);
     }
 
@@ -153,7 +153,7 @@ public class WithResource<R extends AutoCloseable, E extends Throwable> {
      *               second, and may throw an exception.
      * @return A new wrapper containing getters for both resources.
      */
-    public <R2 extends AutoCloseable> WithResources<R, R2, E> and(final ThrowingFunction<R, R2, E> getter) {
+    public <R2 extends AutoCloseable> WithResources<R, R2, E> with(final ThrowingFunction<R, R2, E> getter) {
         return new WithResources<>(rGetter, () -> getter.apply(rGetter.get()));
     }
 

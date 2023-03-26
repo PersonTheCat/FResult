@@ -464,7 +464,7 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
      */
     @CheckReturnValue
     static <E extends Throwable> Protocol define(final Class<E> clazz, final Consumer<E> f) {
-        return new Protocol().and(clazz, f);
+        return new Protocol().define(clazz, f);
     }
 
     /**
@@ -480,7 +480,7 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
      */
     @CheckReturnValue
     static <T, E extends Throwable> Resolver<T> resolve(final Class<E> clazz, final Function<E, T> f) {
-        return new Resolver<T>().and(clazz, f);
+        return new Resolver<T>().resolve(clazz, f);
     }
 
     /**

@@ -14,7 +14,7 @@ public final class ProtocolTest {
     public void protocol_handlesSpecificError() {
         final TestFlag flag = new TestFlag();
         final Protocol p = Result.define(IllegalArgumentException.class, e -> flag.set(false))
-            .and(NullPointerException.class, e -> flag.set(true));
+            .define(NullPointerException.class, e -> flag.set(true));
 
         p.run(() -> { throw new NullPointerException(); });
         assertTrue(flag.isFlagged());

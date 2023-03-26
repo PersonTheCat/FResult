@@ -14,8 +14,8 @@ Or, be extremely specific:
 ```java
   final String s = Result
     .define(FileNotFoundException.class, e -> log.warn("Missing file: {}", e))
-    .and(IllegalArgumentException.class, Result::THROW)
-    .and(IOException.class, Result::WARN)
+    .define(IllegalArgumentException.class, Result::THROW)
+    .define(IOException.class, Result::WARN)
     .suppressNullable(() -> readFile("myFile.txt"))
     .ifEmpty(() -> log.warn("File was empty!"))
     .ifErr(e -> log.warn("Couldn't read file!"))
@@ -207,7 +207,7 @@ Here's how you can use these methods:
   // Use multiple resources
   final String book = Result
     .with(() -> new FileReader("book.txt"))
-    .and(SecondResource::new) // Either a supplier or a function
+    .with(SecondResource::new) // Either a supplier or a function
     .suppress((reader, second) -> { /* read file */ })
     .orElseGet(e -> "");
 ```
@@ -226,8 +226,8 @@ handling different errors.
 ```java
   final Protocol p = Result
     .define(FileNotFoundException.class, Result::THROW) // Crash if not found
-    .and(SecurityException.class, Result::THROW) // Or if the program lacks permission.
-    .and(IOException.class, Result::WARN); // All other IO issues can be ignored.
+    .define(SecurityException.class, Result::THROW) // Or if the program lacks permission.
+    .define(IOException.class, Result::WARN); // All other IO issues can be ignored.
 ```
 
 This object can be used to spawn a new `Result` or can be stored somewhere and be
@@ -236,7 +236,7 @@ passed into multiple `Result#orElseTry` handlers and be reused.
 ```java
   final Result<String, Throwable> r = Result
     .define(FileNotFound.class, e -> log.warn("Error founnd: {}", e))
-    .and(RuntimeException.class, Result::THROW) // Exit thread.
+    .define(RuntimeException.class, Result::THROW) // Exit thread.
     .suppress(() -> readFile("myFile.txt"));
 ```
 
@@ -249,7 +249,7 @@ of `Protocol`.
 ```java
   final String status s = Result
     .resolve(FileNotFound.class, e -> "Couldn't find it!")
-    .and(RuntimeException.class, e -> "Something else went wrong!")
+    .resolve(RuntimeException.class, e -> "Something else went wrong!")
     .suppress(() -> readFile("myFile.txt")) // A definite value is provided
     .expose(); // Because this is Result$value, it may be exposed safely.
 ```

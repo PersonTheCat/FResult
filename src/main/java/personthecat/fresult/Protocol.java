@@ -37,7 +37,7 @@ public class Protocol {
      * @return The current Protocol which now contains the procedure.
      */
     @CheckReturnValue
-    public <E extends Throwable> Protocol and(final Class<E> type, final Consumer<E> func) {
+    public <E extends Throwable> Protocol define(final Class<E> type, final Consumer<E> func) {
         this.procedures.add(new Procedure<>(type, func));
         return this;
     }

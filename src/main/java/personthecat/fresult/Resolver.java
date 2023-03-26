@@ -39,7 +39,7 @@ public class Resolver<T> {
      */
     @CheckReturnValue
     @SuppressWarnings("unchecked")
-    public <E extends Throwable> Resolver<T> and(final Class<E> type, final Function<E, T> func) {
+    public <E extends Throwable> Resolver<T> resolve(final Class<E> type, final Function<E, T> func) {
         this.procedures.add((Procedure<Throwable, T>) new Procedure<>(type, func));
         return this;
     }

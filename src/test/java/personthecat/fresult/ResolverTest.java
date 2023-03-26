@@ -12,7 +12,7 @@ public final class ResolverTest {
     @Test
     public void resolver_handlesSpecificError() {
         final Resolver<String> r = Result.resolve(IllegalArgumentException.class, e -> "")
-            .and(NullPointerException.class, e -> TestUtils.DUMMY_OUTPUT);
+            .resolve(NullPointerException.class, e -> TestUtils.DUMMY_OUTPUT);
 
         assertEquals(TestUtils.DUMMY_OUTPUT, r.expose(() -> { throw new NullPointerException(); }));
     }

@@ -13,7 +13,9 @@ import java.util.function.Supplier;
 import static personthecat.fresult.Shorthand.f;
 
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public interface PartialResult<T, E extends Throwable> extends PartialOptionalResult<T, E> {
+public sealed interface PartialResult<T, E extends Throwable>
+        extends PartialOptionalResult<T, E>
+        permits Result.Value, Result.Error, Result.Pending {
 
     /**
      * Variant of {@link Result#isErr} which can safely guarantee whether the

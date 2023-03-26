@@ -5,6 +5,7 @@ import personthecat.fresult.exception.WrongErrorException;
 import personthecat.fresult.functions.*;
 
 import javax.annotation.CheckReturnValue;
+import java.io.Serial;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -99,7 +100,9 @@ import static personthecat.fresult.Shorthand.wrongErrorEx;
  * @author PersonTheCat
  */
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
+public sealed interface Result<T, E extends Throwable>
+        extends OptionalResult<T, E>
+        permits Result.Error, Result.Value {
 
     /**
      * Accepts an error and ignores it, while still coercing it to its lowest type, thus
@@ -309,7 +312,7 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
     }
 
     /**
-     * Constructs a new result from an operation which may neither err or return a value.
+     * Constructs a new result from an operation which may neither err nor return a value.
      *
      * <p>e.g.</p>
      * <pre>
@@ -1089,15 +1092,14 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
      * @param <T> The type of value being wrapped
      * @param <E> A dummy parameter for the call site
      */
-    class Value<T, E extends Throwable> implements PartialResult<T, E>, Result<T, E> {
+    record Value<T, E extends Throwable>(T value)
+            implements PartialResult<T, E>, Result<T, E>, PartialOptionalResult<T, E>, OptionalResult<T, E> {
 
         private static final Value<Void, ?> OK = new Value<>(Void.INSTANCE);
-        private static final long serialVersionUID = 2L;
+        private static final @Serial long serialVersionUID = 3L;
 
-        private final T value;
-
-        private Value(final T value) {
-            this.value = Objects.requireNonNull(value, "Value may not be null");
+        public Value {
+            Objects.requireNonNull(value, "Value may not be null");
         }
 
         /**
@@ -1250,6 +1252,7 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
          * @deprecated Call {@link Value#expose} instead.
          */
         @Override
+        @Deprecated
         public T expect(final String message, final Object... args) {
             return this.value;
         }
@@ -1554,14 +1557,13 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
      * @param <T> A dummy parameter for the call site
      * @param <E> The type of error being wrapped
      */
-    class Error<T, E extends Throwable> implements PartialResult<T, E>, Result<T, E> {
+    record Error<T, E extends Throwable>(E error)
+            implements PartialResult<T, E>, Result<T, E>, PartialOptionalResult<T, E>, OptionalResult<T, E> {
 
-        private static final long serialVersionUID = 2L;
+        private static final @Serial long serialVersionUID = 3L;
 
-        private final E error;
-
-        private Error(final E error) {
-            this.error = Objects.requireNonNull(error, "Error may not be null");
+        public Error {
+            Objects.requireNonNull(error, "Error may not be null");
         }
 
         /**
@@ -1623,7 +1625,7 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
         }
 
         /**
-         * @deprecated Always an error.
+         * @deprecated Value is always an error.
          */
         @Override
         @Deprecated
@@ -2036,9 +2038,9 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
      * @param <T> A dummy parameter for the call site
      * @param <E> The type of error being wrapped
      */
-    class Empty<T, E extends Throwable> implements OptionalResult<T, E>, PartialOptionalResult<T, E> {
+    final class Empty<T, E extends Throwable> implements OptionalResult<T, E>, PartialOptionalResult<T, E> {
 
-        private static final long serialVersionUID = 2L;
+        private static final @Serial long serialVersionUID = 3L;
 
         static final Empty<?, ?> INSTANCE = new Empty<>();
 
@@ -2442,7 +2444,7 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
      * @param <T> The type of value being wrapped.
      * @param <E> The type of error being wrapped.
      */
-    class Pending<T, E extends Throwable> implements PartialResult<T, E> {
+    final class Pending<T, E extends Throwable> implements PartialResult<T, E>, PartialOptionalResult<T, E> {
 
         private final ThrowingSupplier<T, E> resultGetter;
         private final Supplier<Result<T, E>> defaultGetter;
@@ -2600,7 +2602,7 @@ public interface Result<T, E extends Throwable> extends OptionalResult<T, E> {
      * @param <T> The type of value being wrapped.
      * @param <E> The type of error being wrapped.
      */
-    class PendingNullable<T, E extends Throwable> implements PartialOptionalResult<T, E> {
+    final class PendingNullable<T, E extends Throwable> implements PartialOptionalResult<T, E> {
 
         private final ThrowingSupplier<T, E> resultGetter;
         private volatile OptionalResult<T, E> result = null;

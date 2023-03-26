@@ -60,7 +60,9 @@ import static personthecat.fresult.Shorthand.f;
  * @param <E> The type of error being consumed by the wrapper.
  */
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public interface PartialOptionalResult<T, E extends Throwable> extends BasicResult<T, E> {
+public sealed interface PartialOptionalResult<T, E extends Throwable>
+        extends BasicResult<T, E>
+        permits Result.Empty, Result.Error, PartialResult, Result.Pending, Result.PendingNullable, Result.Value {
 
     /**
      * Consumes instructions for what to do if a given result contains no value. This

@@ -18,7 +18,7 @@ import static personthecat.fresult.Shorthand.missingProcedureEx;
  * A set of procedures for handling specific error types.
  */
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public class Protocol {
+public final class Protocol {
 
     private final Set<Procedure<? extends Throwable>> procedures = new HashSet<>();
 
@@ -160,14 +160,8 @@ public class Protocol {
         return (E) e;
     }
 
-    /** A procedure defined for handling a specific type of error. */
-    private static class Procedure<T> {
-        final Class<T> clazz;
-        final Consumer<T> func;
-
-        Procedure(final Class<T> clazz, final Consumer<T> func) {
-            this.clazz = clazz;
-            this.func = func;
-        }
-    }
+    /**
+     * A procedure defined for handling a specific type of error.
+     */
+    private record Procedure<T>(Class<T> clazz, Consumer<T> func) {}
 }

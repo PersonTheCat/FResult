@@ -18,7 +18,9 @@ import java.util.function.Supplier;
 import static personthecat.fresult.Shorthand.f;
 
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public interface OptionalResult<T, E extends Throwable> extends BasicResult<T, E>, Serializable {
+public sealed interface OptionalResult<T, E extends Throwable>
+        extends BasicResult<T, E>, Serializable
+        permits Result.Empty, Result.Error, Result.Value, Result {
 
     /**
      * Consumes instructions for what to do if a given result contains no value. This

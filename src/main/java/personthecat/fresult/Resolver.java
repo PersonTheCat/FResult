@@ -1,10 +1,10 @@
 package personthecat.fresult;
 
+import org.jetbrains.annotations.CheckReturnValue;
 import personthecat.fresult.exception.MissingProcedureException;
 import personthecat.fresult.functions.ThrowingOptionalSupplier;
 import personthecat.fresult.functions.ThrowingSupplier;
 
-import javax.annotation.CheckReturnValue;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;

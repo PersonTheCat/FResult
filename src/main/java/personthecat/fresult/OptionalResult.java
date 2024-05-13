@@ -1,5 +1,6 @@
 package personthecat.fresult;
 
+import org.jetbrains.annotations.CheckReturnValue;
 import personthecat.fresult.exception.ResultUnwrapException;
 import personthecat.fresult.exception.WrongErrorException;
 import personthecat.fresult.functions.OptionalResultFunction;
@@ -7,7 +8,6 @@ import personthecat.fresult.functions.ThrowingFunction;
 import personthecat.fresult.functions.ThrowingRunnable;
 import personthecat.fresult.functions.ThrowingSupplier;
 
-import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
 import java.util.Optional;
 import java.util.function.Consumer;

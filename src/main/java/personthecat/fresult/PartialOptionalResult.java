@@ -3,7 +3,7 @@ package personthecat.fresult;
 import personthecat.fresult.exception.ResultUnwrapException;
 import personthecat.fresult.exception.WrongErrorException;
 
-import javax.annotation.CheckReturnValue;
+import org.jetbrains.annotations.CheckReturnValue;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;

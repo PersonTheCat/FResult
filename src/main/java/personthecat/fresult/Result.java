@@ -1,10 +1,10 @@
 package personthecat.fresult;
 
+import org.jetbrains.annotations.CheckReturnValue;
 import personthecat.fresult.exception.ResultUnwrapException;
 import personthecat.fresult.exception.WrongErrorException;
 import personthecat.fresult.functions.*;
 
-import javax.annotation.CheckReturnValue;
 import java.io.Serial;
 import java.util.ArrayList;
 import java.util.List;

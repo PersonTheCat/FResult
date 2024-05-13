@@ -1,8 +1,8 @@
 package personthecat.fresult;
 
+import org.jetbrains.annotations.CheckReturnValue;
 import personthecat.fresult.exception.ResultUnwrapException;
 
-import javax.annotation.CheckReturnValue;
 import java.util.Optional;
 import java.util.function.Consumer;
 
